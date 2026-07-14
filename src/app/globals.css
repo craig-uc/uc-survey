@@ -1,26 +1,130 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  @font-face {
+    font-family: 'Oxanium';
+    src: url('./assets/fonts/Oxanium-VariableFont_wght.woff2') format('woff2-variations');
+    font-weight: 200 800;
+    font-style: normal;
+  }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  @font-face {
+    font-family: 'Pilat';
+    src: url('./assets/fonts/PilatLight.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+  }
 
-@media (prefers-color-scheme: dark) {
+  @font-face {
+    font-family: 'Pilat';
+    src: url('./assets/fonts/PilatDemi.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'Pilat';
+    src: url('./assets/fonts/PilatWideHeavy.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+  }
+
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --theme-primary                         : oklch(0.5887 0.1742 137.56);
+    --theme-on-primary                      : oklch(1 0 0);
+    --theme-secondary                       : oklch(0.437 0.125 142.88);
+    --theme-on-secondary                    : oklch(1 0 0);
+    --theme-light                           : oklch(1 0 0);
+    --theme-dark                            : oklch(0 0 0);
+    --theme-info                            : oklch(0.5157 0.0449 195.85);
+    --theme-success                         : oklch(0.8678 0.1859 131.86);
+    --theme-warning                         : oklch(0.5156 0.114 64);
+    --theme-danger                          : oklch(0.5645 0.2118 29.63);
+    --bg-image                              : url('assets/images/dark/background.webp');
+    --theme-font                            : "Oxanium", "Inter", sans-serif;
+  }
+  [data-theme="dpw-apac"] {
+    --theme-primary                         : oklch(0.4225 0.2121 273.16);
+    --theme-on-primary                      : oklch(1 0 0);
+    --theme-secondary                       : oklch(0.6464 0.2447 13.39);
+    --theme-on-secondary                    : oklch(1 0 0);
+    --theme-light                           : oklch(0.9662 0.0034 325.6);
+    --theme-dark                            : oklch(0.2488 0.104 283.45);
+    --theme-info                            : oklch(0.8012 0.052 256.67);
+    --theme-success                         : oklch(0.8136 0.1952 156.58);
+    --theme-warning                         : oklch(0.5156 0.114 64);
+    --theme-danger                          : oklch(0.5645 0.2118 29.63);
+    --bg-image                              : url('./assets/images/dpw-apac/background.webp');
+    --theme-font                            : "Pilat", "Inter", sans-serif;
+  }
+  [data-theme="dpw-eu"] {
+    --theme-primary                         : oklch(0.4225 0.2121 273.16);
+    --theme-on-primary                      : oklch(1 0 0);
+    --theme-secondary                       : oklch(0.6464 0.2447 13.39);
+    --theme-on-secondary                    : oklch(1 0 0);
+    --theme-light                           : oklch(0.9662 0.0034 325.6);
+    --theme-dark                            : oklch(0.2488 0.104 283.45);
+    --theme-info                            : oklch(0.8012 0.052 256.67);
+    --theme-success                         : oklch(0.8136 0.1952 156.58);
+    --theme-warning                         : oklch(0.5156 0.114 64);
+    --theme-danger                          : oklch(0.5645 0.2118 29.63);
+    --bg-image                              : url('./assets/images/dpw-eu/background.webp');
+    --theme-font                            : "Pilat", "Inter", sans-serif;
+  }
+  [data-theme="dpw-gbl"] {
+    --theme-primary                         : oklch(0.4225 0.2121 273.16);
+    --theme-on-primary                      : oklch(1 0 0);
+    --theme-secondary                       : oklch(0.6464 0.2447 13.39);
+    --theme-on-secondary                    : oklch(1 0 0);
+    --theme-light                           : oklch(0.9662 0.0034 325.6);
+    --theme-dark                            : oklch(0.2488 0.104 283.45);
+    --theme-info                            : oklch(0.8012 0.052 256.67);
+    --theme-success                         : oklch(0.8136 0.1952 156.58);
+    --theme-warning                         : oklch(0.5156 0.114 64);
+    --theme-danger                          : oklch(0.5645 0.2118 29.63);
+    --bg-image                              : url('assets/images/dpw-gbl/background.webp');
+    --theme-font                            : "Pilat", "Inter", sans-serif;
+  }
+  [data-theme="nedbank"] {
+    --theme-primary                         : oklch(0.438169 0.097475 161.0617);
+    --theme-on-primary                      : oklch(1 0 0);
+    --theme-secondary                       : oklch(0.9762 0.038 150.05);
+    --theme-on-secondary                    : oklch(0 0 0);
+    --theme-light                           : oklch(1 0 0);
+    --theme-dark                            : oklch(0 0 0);
+    --theme-info                            : oklch(0.810026 0.213298 151.9571);
+    --theme-success                         : oklch(0.6508 0.1794 133.26);
+    --theme-warning                         : oklch(0.5156 0.114 64);
+    --theme-danger                          : oklch(0.5645 0.2118 29.63);
+    --bg-image                              : url('./assets/images/nedbank/background.webp');
+    --theme-font                            : "Inter", sans-serif;
+  }
+  [data-theme="urup"] {
+    --theme-primary                         : oklch(0.5887 0.1742 137.56);
+    --theme-on-primary                      : oklch(1 0 0);
+    --theme-secondary                       : oklch(0.437 0.125 142.88);
+    --theme-on-secondary                    : oklch(1 0 0);
+    --theme-light                           : oklch(1 0 0);
+    --theme-dark                            : oklch(0 0 0);
+    --theme-info                            : oklch(0.5157 0.0449 195.85);
+    --theme-success                         : oklch(0.8678 0.1859 131.86);
+    --theme-warning                         : oklch(0.5156 0.114 64);
+    --theme-danger                          : oklch(0.5645 0.2118 29.63);
+    --bg-image                              : url('./assets/images/urup/background.webp');
+    --theme-font                            : "Oxanium", "Inter", sans-serif;
   }
 }
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme {
+  --font-custom: var(--theme-font);
+  --color-accent: #7c3aed;
+  --color-primary: var(--theme-primary);
+  --color-on-primary: var(--theme-on-primary);
+  --color-secondary: var(--theme-secondary);
+  --color-on-secondary: var(--theme-on-secondary);
+  --color-light: var(--theme-light);
+  --color-dark: var(--theme-dark);
+  --color-info: var(--theme-info);
+  --color-success: var(--theme-success);
+  --color-warning: var(--theme-warning);
+  --color-danger: var(--theme-danger);
 }
