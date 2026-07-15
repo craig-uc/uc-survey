@@ -1,2 +1,3 @@
 export { default as AuthFlow } from "./AuthFlow";
-export type { AuthFlowProps, AuthFlowHandle, AuthSessionData, AuthAppSettings } from "./types";
+export { useApplySession } from "./useApplySession";
+export type { AuthFlowProps, AuthFlowHandle, AuthSessionData, AuthAppSettings, AuthStep } from "./types";

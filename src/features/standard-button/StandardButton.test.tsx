@@ -143,6 +143,32 @@ describe("StandardButton", () => {
       await waitFor(() => expect(screen.getByRole("button").hasAttribute("disabled")).toBe(false));
     });
 
+    it("shows the spinner and disables the button when the loading prop is true, without a click", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+      render(<StandardButton {...DEFAULT_PROPS} loading />);
+      expect(screen.getByRole("button").hasAttribute("disabled")).toBe(true);
+      expect(screen.queryByText("Submit")).toBeNull();
+    });
+
+    it("returns to normal once the loading prop goes back to false", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+      const { rerender } = render(<StandardButton {...DEFAULT_PROPS} loading />);
+      expect(screen.getByRole("button").hasAttribute("disabled")).toBe(true);
+
+      rerender(<StandardButton {...DEFAULT_PROPS} loading={false} />);
+      expect(screen.getByRole("button").hasAttribute("disabled")).toBe(false);
+      expect(screen.getByRole("button", { name: "Submit" })).toBeTruthy();
+    });
+
+    it("stays busy from the loading prop even after a click-triggered spinner resolves", async () => {
+      const onClick = vi.fn().mockResolvedValue(undefined);
+      render(<StandardButton {...DEFAULT_PROPS} onClick={onClick} loading />);
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button"));
+      });
+      expect(screen.getByRole("button").hasAttribute("disabled")).toBe(true);
+    });
+
     it("stops spinner when pathname changes", async () => {
       const onClickNeverResolves = vi.fn().mockReturnValue(new Promise(() => {}));
       const { rerender } = render(<StandardButton {...DEFAULT_PROPS} onClick={onClickNeverResolves} />);

@@ -20,6 +20,8 @@ export interface AuthSessionData {
 
 import React from "react";
 
+export type AuthStep = "login" | "sent" | "signing-in";
+
 export interface AuthFlowHandle {
   submitLogin: () => Promise<false>;
 }
@@ -31,4 +33,6 @@ export interface AuthFlowProps {
   hideLoginButton?: boolean;
   onSignInSuccess?: (data: AuthSessionData) => void;
   onSignInError?: () => void;
+  onStepChange?: (step: AuthStep) => void;
+  onSubmittingChange?: (submitting: boolean) => void;
 }

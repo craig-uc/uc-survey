@@ -143,6 +143,20 @@ describe("NavButton", () => {
     });
   });
 
+  describe("loading", () => {
+    it("is not disabled when loading is not provided", () => {
+      vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+      render(<NavButton type="submit" label="Login" href="#" />);
+      expect(screen.getByRole("button").hasAttribute("disabled")).toBe(false);
+    });
+
+    it("disables the button when loading is true, without a click", () => {
+      vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+      render(<NavButton type="submit" label="Login" href="#" loading />);
+      expect(screen.getByRole("button").hasAttribute("disabled")).toBe(true);
+    });
+  });
+
   describe("style", () => {
     it("applies primary style for submit type by default", () => {
       vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));

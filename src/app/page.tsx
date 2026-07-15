@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, Suspense, useEffect } from "react";
+import { useRef, useState, Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { IdentityInitializer } from "@/features/identity";
 import GlassPanel from "@/components/GlassPanel";
-import { AuthFlow, AuthFlowHandle } from "@/features/auth";
+import { AuthFlow, AuthFlowHandle, AuthStep } from "@/features/auth";
 
 const page = "indexAuth";
 const version = "1";
@@ -12,6 +12,8 @@ const version = "1";
 export default function RootPage() {
   const router = useRouter();
   const authRef = useRef<AuthFlowHandle>(null);
+  const [step, setStep] = useState<AuthStep>("login");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
   }, [router]);
@@ -25,7 +27,14 @@ export default function RootPage() {
         showTitle
         navigation={{
           buttons: [
-            { type: "submit", label: "Login", href: "#", onClick: () => authRef.current?.submitLogin() },
+            {
+              type: "submit",
+              label: "Login",
+              href: "#",
+              show: step !== "sent",
+              loading: submitting,
+              onClick: () => authRef.current?.submitLogin(),
+            },
           ],
         }}
       >
@@ -33,6 +42,8 @@ export default function RootPage() {
           <AuthFlow
             ref={authRef}
             hideLoginButton
+            onStepChange={setStep}
+            onSubmittingChange={setSubmitting}
             onSignInSuccess={(data) => {
               // store session, redirect
             }}

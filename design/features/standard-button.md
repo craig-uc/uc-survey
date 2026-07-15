@@ -22,6 +22,7 @@ Location: `src/features/standard-button/`
 | `onClick` | `() => Promise<void>` | Yes | Async action to perform on click; spinner runs until the promise settles |
 | `className` | `string` | No | CSS classes applied to the `<button>` element |
 | `disabled` | `boolean` | No | Disables the button independently of loading state |
+| `loading` | `boolean` | No | Forces the busy spinner/disabled state from outside the component, OR'd with the internal click-triggered loading state — see [Spinner state](#spinner-state) |
 
 ---
 
@@ -41,6 +42,12 @@ On click:
 If navigation occurs while the spinner is active (e.g. the button lives in a persistent layout and `onClick` triggers a route change), the spinner clears as soon as `usePathname()` returns a new value. This prevents a perpetually spinning button when the navigating page is the one that would have resolved the promise.
 
 Errors thrown by `onClick` are caught silently by the button; error handling is the caller's responsibility within the `onClick` implementation.
+
+### External loading override
+
+The `loading` prop lets a parent force the busy state (spinner + disabled) without going through this button's own `onClick`. The rendered busy state is `internalClickLoading || loading` — either source can trigger it, and the button only returns to idle once both are false.
+
+This exists for cases where the action can be triggered from somewhere other than a click on this specific button — e.g. `AuthFlow`'s email field submits on Enter (see [auth-flow.md](../features/auth-flow.md#enter-to-submit)) while the actual "Login" button lives outside `AuthFlow`'s form, in a `GlassPanel` nav pane. Without the `loading` prop, that external button would have no way to reflect a submission it didn't initiate.
 
 ---
 

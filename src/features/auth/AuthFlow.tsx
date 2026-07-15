@@ -3,15 +3,22 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import Button from "@/components/ui/Button";
 import { StandardInput } from "@/features/standard-input";
-import { AuthFlowProps, AuthFlowHandle, AuthSessionData } from "./types";
-
-type AuthStep = "login" | "sent" | "signing-in";
+import { AuthFlowProps, AuthFlowHandle, AuthSessionData, AuthStep } from "./types";
 
 const LOGIN_API = "/api/auth/login";
 const SIGNIN_API = "/api/auth/signin";
 
 const AuthFlow = forwardRef<AuthFlowHandle, AuthFlowProps>(function AuthFlow(
-  { code, tenantCode, logo, hideLoginButton = false, onSignInSuccess, onSignInError },
+  {
+    code,
+    tenantCode,
+    logo,
+    hideLoginButton = false,
+    onSignInSuccess,
+    onSignInError,
+    onStepChange,
+    onSubmittingChange,
+  },
   ref
 ) {
   const [step, setStep] = useState<AuthStep>(code ? "signing-in" : "login");
@@ -26,6 +33,14 @@ const AuthFlow = forwardRef<AuthFlowHandle, AuthFlowProps>(function AuthFlow(
       performSignIn(code);
     }
   }, [code]);
+
+  useEffect(() => {
+    onStepChange?.(step);
+  }, [step]);
+
+  useEffect(() => {
+    onSubmittingChange?.(status === "Submitting...");
+  }, [status]);
 
   const performSignIn = async (authCode: string) => {
     try {
@@ -51,10 +66,15 @@ const AuthFlow = forwardRef<AuthFlowHandle, AuthFlowProps>(function AuthFlow(
 
     setStatus("Submitting...");
     try {
+      const basePath = window.location.pathname.endsWith("/")
+        ? window.location.pathname.slice(0, -1)
+        : window.location.pathname;
+      const redirectUrl = `${window.location.origin}${basePath}/signIn`;
+
       const res = await fetch(LOGIN_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, tenantCode }),
+        body: JSON.stringify({ email, tenantCode, redirectUrl }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -73,6 +93,12 @@ const AuthFlow = forwardRef<AuthFlowHandle, AuthFlowProps>(function AuthFlow(
   useImperativeHandle(ref, () => ({ submitLogin }));
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await submitLogin();
+  };
+
+  const handleFormKeyDown = async (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key !== "Enter") return;
     e.preventDefault();
     await submitLogin();
   };
@@ -100,7 +126,12 @@ const AuthFlow = forwardRef<AuthFlowHandle, AuthFlowProps>(function AuthFlow(
               {status}
             </p>
           )}
-          <form className="w-full space-y-6" onSubmit={handleSubmit} method="POST">
+          <form
+            className="w-full space-y-6"
+            onSubmit={handleSubmit}
+            onKeyDown={handleFormKeyDown}
+            method="POST"
+          >
             <StandardInput
               ref={emailRef}
               label="email"

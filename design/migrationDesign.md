@@ -71,8 +71,8 @@ The current fixed **category → descriptor → question → answers**, hard-cod
 |---|---|---|
 | **Tenant** | A client organization | id, slug, subdomain, display name, branding (colors/logo/fonts), default locale, active locales |
 | **Locale** | A supported language, tenant-scoped list of active locales | code (`en`, `fr`, ...), display name |
-| **Survey** | A named, versioned questionnaire belonging to a tenant | id, tenant_id, name, status (draft/published/closed), version |
-| **SurveyStep** | A generalized replacement for the fixed "gate" concept — an ordered page in the survey flow | id, survey_id, order, type (`intro` \| `intake_field` \| `question_set` \| `closing`), config (JSON, type-specific) |
+| **Survey** | A named, versioned questionnaire belonging to a tenant | id, tenant_id, name, status (draft/published/closed), version, start_at (nullable), end_at (nullable) |
+| **SurveyStep** | A generalized replacement for the fixed "gate" concept — an ordered page in the survey flow | id, survey_id, order, type (`pre_start` \| `intro` \| `intake_field` \| `question_set` \| `closing`), config (JSON, type-specific) |
 | **IntakeField** | Generalizes the hard-coded "location picker" into tenant-configurable custom fields collected before/alongside questions | id, step_id, field_key, field_type (select/text/radio), options[], required |
 | **Category** | Grouping of questions (was hard-coded, e.g. "Communication & Collaboration") | id, survey_id, order |
 | **Question** | A single survey question | id, category_id, order, answer_type (single-select/Likert-5/etc.) |
@@ -88,11 +88,21 @@ This is a first-pass shape, not a finalized schema — normalization, indexing, 
 
 Today's flow (Location → Intro → 38 Questions → Thank-you) becomes a **configurable ordered list of `SurveyStep`s**, each rendered by a generic step component keyed off `type`:
 
-- `intro` / `closing` — static, translated rich text.
+- `pre_start` / `intro` / `closing` — static, translated rich text.
 - `intake_field` — one or more tenant-defined fields (generalizes "location," could be department, region, employee ID, etc.).
 - `question_set` — one or more categories of questions, same rendering engine as today's Gate 3 but driven by fetched data instead of an inline script.
 
 This lets a tenant have a 2-step survey or a 10-step survey without any code change — purely an admin-console/data change.
+
+> **Note (2026-07-14):** the original draft above bundled `intro`/`closing` as a single "static" step concept. These are being split into three distinct static step types, each with its own design doc since they have different triggers and behaviour:
+>
+> - `pre_start` — gated on `Survey.start_at`; shown when the instance is loaded before the survey's configured start time. See [`design/survey-step-prestart.md`](survey-step-prestart.md).
+> - `intro` — the survey's starting page once open; unchanged in spirit from the original draft. See [`design/survey-step-intro.md`](survey-step-intro.md).
+> - `closing` — gated on `Survey.end_at`; shown once the survey's end time has been reached. See [`design/survey-step-closing.md`](survey-step-closing.md).
+>
+> `pre_start` and `closing` are time-gated overrides on top of the ordered step sequence (they can pre-empt whatever step a respondent would otherwise be on), rather than steps that occupy a fixed `order` position — this distinction is still open and tracked in each doc's Open Questions. `Survey.start_at`/`end_at` (nullable — no gating when absent) are added to §7.1 to support this. These three docs are intentionally light first drafts, to be expanded once the flow is worked through further.
+>
+> **Update (2026-07-14):** the route that resolves a tenant/slug to one of these three states (plus a not-found state for an unmatched slug) has been implemented against mock data — see [`design/survey-routing.md`](survey-routing.md) and [`design/survey-not-found.md`](survey-not-found.md). It's a partial implementation (no translations/telemetry/real API yet); the three step docs above remain `Draft` since their own open questions are still unresolved.
 
 ## 8. External API Dependency
 

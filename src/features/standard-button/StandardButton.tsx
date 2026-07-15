@@ -35,9 +35,11 @@ export function StandardButton({
   onClick,
   className,
   disabled = false,
+  loading: externalLoading = false,
 }: StandardButtonProps) {
   const [displayLabel, setDisplayLabel] = useState(label);
-  const [loading, setLoading] = useState(false);
+  const [clickLoading, setClickLoading] = useState(false);
+  const isBusy = clickLoading || externalLoading;
   const pathname = usePathname();
   const isFirstRender = useRef(true);
 
@@ -66,17 +68,17 @@ export function StandardButton({
       isFirstRender.current = false;
       return;
     }
-    setLoading(false);
+    setClickLoading(false);
   }, [pathname]);
 
   const handleClick = async () => {
-    setLoading(true);
+    setClickLoading(true);
     try {
       await onClick();
     } catch {
       // error handling is the caller's responsibility within onClick
     } finally {
-      setLoading(false);
+      setClickLoading(false);
     }
   };
 
@@ -84,10 +86,10 @@ export function StandardButton({
     <button
       type="button"
       onClick={handleClick}
-      disabled={disabled || loading}
+      disabled={disabled || isBusy}
       className={className}
     >
-      {loading ? <Spinner /> : displayLabel}
+      {isBusy ? <Spinner /> : displayLabel}
     </button>
   );
 }

@@ -36,6 +36,7 @@ Location: `src/components/GlassPanel.tsx`
 | `style` | `"primary" \| "secondary" \| string` | by type | Visual style — `primary` or `secondary` maps to theme tokens; any other string is applied directly as Tailwind classes |
 | `position` | `"left" \| "center" \| "right"` | by type | Which nav zone the button occupies; defaults: `back`→left, all others→right |
 | `onClick` | `() => Promise<boolean \| void> \| boolean \| void` | — | Pre-navigation guard; return `false` to cancel navigation |
+| `loading` | `boolean` | `false` | Forces the button's spinner/disabled state (passed through to `NavButton` → `StandardButton`'s external `loading` prop), independent of its own `onClick` |
 
 #### Default styles by type
 
@@ -128,18 +129,28 @@ With title and back/submit navigation:
 </GlassPanel>
 ```
 
-Login button in the nav bar (onClick always returns false — AuthFlow manages step internally):
+Login button in the nav bar (onClick always returns false — AuthFlow manages step internally). `loading` is wired from `AuthFlow`'s `onSubmittingChange` so the button shows busy/disabled even when submission is triggered by pressing Enter in the email field rather than by clicking this button:
 
 ```tsx
+const [step, setStep] = useState<AuthStep>("login");
+const [submitting, setSubmitting] = useState(false);
+
 <GlassPanel
   showTitle
   navigation={{
     buttons: [
-      { type: "submit", label: "Login", href: "#", onClick: () => authRef.current?.submitLogin() },
+      {
+        type: "submit",
+        label: "Login",
+        href: "#",
+        show: step !== "sent",
+        loading: submitting,
+        onClick: () => authRef.current?.submitLogin(),
+      },
     ],
   }}
 >
-  <AuthFlow ref={authRef} hideLoginButton ... />
+  <AuthFlow ref={authRef} hideLoginButton onStepChange={setStep} onSubmittingChange={setSubmitting} ... />
 </GlassPanel>
 ```
 

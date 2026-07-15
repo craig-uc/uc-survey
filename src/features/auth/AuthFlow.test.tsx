@@ -67,6 +67,7 @@ describe("AuthFlow", () => {
       await waitFor(() => {
         expect(screen.getByText(/An email with the login link/i)).not.toBeNull();
       });
+      expect(screen.queryByRole("button", { name: /login/i })).toBeNull();
     });
 
     it("shows an error status when the login API returns an error", async () => {
@@ -112,6 +113,131 @@ describe("AuthFlow", () => {
       await waitFor(() => {
         expect(screen.getByText(/Network error/i)).not.toBeNull();
       });
+    });
+
+    it("includes a redirectUrl pointing at the signIn callback alongside the current path", async () => {
+      history.pushState({}, "", "/acme/en/admin/auth");
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ message: "OK" }),
+      });
+      vi.stubGlobal("fetch", fetchSpy);
+
+      render(<AuthFlow />);
+      await act(async () => {});
+
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "user@example.com" },
+      });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: /login/i }).closest("form")!);
+      });
+
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+      const [, options] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(options.body);
+      expect(body.redirectUrl).toBe(`${window.location.origin}/acme/en/admin/auth/signIn`);
+    });
+
+    it("does not produce a double slash when the current path already ends in /", async () => {
+      history.pushState({}, "", "/acme/en/admin/auth/");
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ message: "OK" }),
+      });
+      vi.stubGlobal("fetch", fetchSpy);
+
+      render(<AuthFlow />);
+      await act(async () => {});
+
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "user@example.com" },
+      });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: /login/i }).closest("form")!);
+      });
+
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+      const [, options] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(options.body);
+      expect(body.redirectUrl).toBe(`${window.location.origin}/acme/en/admin/auth/signIn`);
+    });
+
+    it("submits the login when Enter is pressed in the email field", async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ message: "OK" }),
+      });
+      vi.stubGlobal("fetch", fetchSpy);
+
+      render(<AuthFlow />);
+      await act(async () => {});
+
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "user@example.com" },
+      });
+
+      await act(async () => {
+        fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter", code: "Enter" });
+      });
+
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+      expect(screen.getByText(/An email with the login link/i)).not.toBeNull();
+    });
+
+    it("submits the login via Enter even when the visible button is hidden", async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ message: "OK" }),
+      });
+      vi.stubGlobal("fetch", fetchSpy);
+
+      render(<AuthFlow hideLoginButton />);
+      await act(async () => {});
+
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "user@example.com" },
+      });
+
+      await act(async () => {
+        fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter", code: "Enter" });
+      });
+
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+    });
+
+    it("does not submit when a non-Enter key is pressed", async () => {
+      const fetchSpy = vi.fn();
+      vi.stubGlobal("fetch", fetchSpy);
+
+      render(<AuthFlow />);
+      await act(async () => {});
+
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "user@example.com" },
+      });
+
+      await act(async () => {
+        fireEvent.keyDown(screen.getByRole("textbox"), { key: "a", code: "KeyA" });
+      });
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it("does not call the login API when Enter is pressed with an empty email", async () => {
+      const fetchSpy = vi.fn();
+      vi.stubGlobal("fetch", fetchSpy);
+
+      render(<AuthFlow />);
+      await act(async () => {});
+
+      await act(async () => {
+        fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter", code: "Enter" });
+      });
+
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -168,6 +294,131 @@ describe("AuthFlow", () => {
       await act(async () => {});
       expect(screen.getByRole("status")).not.toBeNull();
       expect(screen.getByText("Finalizing...")).not.toBeNull();
+    });
+  });
+
+  describe("onStepChange", () => {
+    it("is called with 'login' on initial mount when no code is provided", async () => {
+      const onStepChange = vi.fn();
+      render(<AuthFlow onStepChange={onStepChange} />);
+      await act(async () => {});
+
+      expect(onStepChange).toHaveBeenCalledWith("login");
+    });
+
+    it("is called with 'signing-in' on initial mount when a code is provided", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+      const onStepChange = vi.fn();
+      render(<AuthFlow code="pending-code" onStepChange={onStepChange} />);
+      await act(async () => {});
+
+      expect(onStepChange).toHaveBeenCalledWith("signing-in");
+    });
+
+    it("is called with 'sent' after a successful login submission", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ message: "OK" }),
+        })
+      );
+      const onStepChange = vi.fn();
+
+      render(<AuthFlow onStepChange={onStepChange} />);
+      await act(async () => {});
+
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "user@example.com" },
+      });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: /login/i }).closest("form")!);
+      });
+
+      await waitFor(() => expect(onStepChange).toHaveBeenCalledWith("sent"));
+    });
+
+    it("does not throw when onStepChange is not provided", async () => {
+      expect(() => render(<AuthFlow />)).not.toThrow();
+    });
+  });
+
+  describe("onSubmittingChange", () => {
+    it("is called with false on initial mount", async () => {
+      const onSubmittingChange = vi.fn();
+      render(<AuthFlow onSubmittingChange={onSubmittingChange} />);
+      await act(async () => {});
+
+      expect(onSubmittingChange).toHaveBeenCalledWith(false);
+    });
+
+    it("reports true while submitting via the inline button, then false once it settles", async () => {
+      let resolveFetch!: (value: unknown) => void;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockReturnValue(
+          new Promise((res) => {
+            resolveFetch = res;
+          })
+        )
+      );
+      const onSubmittingChange = vi.fn();
+
+      render(<AuthFlow onSubmittingChange={onSubmittingChange} />);
+      await act(async () => {});
+
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "user@example.com" },
+      });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: /login/i }).closest("form")!);
+      });
+
+      expect(onSubmittingChange).toHaveBeenLastCalledWith(true);
+
+      await act(async () => {
+        resolveFetch({ ok: true, json: () => Promise.resolve({ message: "OK" }) });
+      });
+
+      await waitFor(() => expect(onSubmittingChange).toHaveBeenLastCalledWith(false));
+    });
+
+    it("reports true while submitting via Enter, then false once it settles", async () => {
+      let resolveFetch!: (value: unknown) => void;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockReturnValue(
+          new Promise((res) => {
+            resolveFetch = res;
+          })
+        )
+      );
+      const onSubmittingChange = vi.fn();
+
+      render(<AuthFlow hideLoginButton onSubmittingChange={onSubmittingChange} />);
+      await act(async () => {});
+
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "user@example.com" },
+      });
+
+      await act(async () => {
+        fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter", code: "Enter" });
+      });
+
+      expect(onSubmittingChange).toHaveBeenLastCalledWith(true);
+
+      await act(async () => {
+        resolveFetch({ ok: true, json: () => Promise.resolve({ message: "OK" }) });
+      });
+
+      await waitFor(() => expect(onSubmittingChange).toHaveBeenLastCalledWith(false));
+    });
+
+    it("does not throw when onSubmittingChange is not provided", async () => {
+      expect(() => render(<AuthFlow />)).not.toThrow();
     });
   });
 

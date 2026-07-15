@@ -6,4 +6,5 @@ export interface StandardButtonProps {
   onClick: () => Promise<void>;
   className?: string;
   disabled?: boolean;
+  loading?: boolean;
 }

@@ -12,6 +12,7 @@ interface NavButtonProps {
   style?: "primary" | "secondary" | string;
   position?: "center" | "left" | "right";
   onClick?: () => Promise<boolean | void> | boolean | void;
+  loading?: boolean;
 }
 
 const BASE = "px-6 py-2 rounded-full font-medium transition-colors cursor-pointer uppercase tracking-wide";
@@ -25,7 +26,7 @@ function defaultStyle(type: string): string {
   return type === "submit" ? "primary" : "secondary";
 }
 
-export default function NavButton({ type, label, href, style, onClick }: NavButtonProps) {
+export default function NavButton({ type, label, href, style, onClick, loading }: NavButtonProps) {
   const { tenantCode } = useTenant();
   const { lang } = useGlobalState();
   const router = useRouter();
@@ -49,6 +50,7 @@ export default function NavButton({ type, label, href, style, onClick }: NavButt
       application={process.env.NEXT_PUBLIC_APPLICATION ?? ""}
       onClick={handleClick}
       className={`${BASE} ${styleClass}`}
+      loading={loading}
     />
   );
 }

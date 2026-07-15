@@ -4,7 +4,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    if (!body.email) {
+    if (!body.email || !body.redirectUrl) {
       return NextResponse.json({ error: "All fields are required." }, { status: 400 });
     }
 

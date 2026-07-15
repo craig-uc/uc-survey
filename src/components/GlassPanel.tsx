@@ -30,6 +30,7 @@ export interface ButtonConfig {
   style?: "primary" | "secondary" | string;
   position?: "center" | "left" | "right";
   onClick?: () => Promise<boolean | void> | boolean | void;
+  loading?: boolean;
 }
 
 export interface NavigationConfig {

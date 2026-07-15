@@ -1,14 +1,16 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import GlassPanel from "@/components/GlassPanel";
-import { AuthFlow, AuthFlowHandle } from "@/features/auth";
+import { AuthFlow, AuthFlowHandle, AuthStep } from "@/features/auth";
 
 const page = "auth";
 const version = "1";
 
 export default function AuthPage() {
   const authRef = useRef<AuthFlowHandle>(null);
+  const [step, setStep] = useState<AuthStep>("login");
+  const [submitting, setSubmitting] = useState(false);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -16,7 +18,14 @@ export default function AuthPage() {
         showTitle
         navigation={{
           buttons: [
-            { type: "submit", label: "Login", href: "#", onClick: () => authRef.current?.submitLogin() },
+            {
+              type: "submit",
+              label: "Login",
+              href: "#",
+              show: step !== "sent",
+              loading: submitting,
+              onClick: () => authRef.current?.submitLogin(),
+            },
           ],
         }}
       >
@@ -24,6 +33,8 @@ export default function AuthPage() {
           <AuthFlow
             ref={authRef}
             hideLoginButton
+            onStepChange={setStep}
+            onSubmittingChange={setSubmitting}
             onSignInSuccess={(data) => {
               // store session, redirect
             }}
