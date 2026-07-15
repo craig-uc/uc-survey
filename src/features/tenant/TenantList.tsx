@@ -1,13 +1,33 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import GlassPanel from "@/components/GlassPanel";
-import { listActiveTenants } from "./mockTenants";
 import TenantEntry from "./TenantEntry";
+import { Tenant } from "./types";
 
 interface TenantListProps {
   lang: string;
 }
 
 export default function TenantList({ lang }: TenantListProps) {
-  const tenants = listActiveTenants();
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/tenant/list", { method: "POST" })
+      .then((res) => (res.ok ? res.json() : { tenants: [] }))
+      .then((data) => {
+        if (!cancelled) setTenants(data.tenants ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setTenants([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <GlassPanel>

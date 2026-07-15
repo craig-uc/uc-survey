@@ -1,35 +1,66 @@
 import React from "react";
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import TenantList from "./TenantList";
-import { listActiveTenants } from "./mockTenants";
-
-vi.mock("./mockTenants", async () => {
-  const actual = await vi.importActual<typeof import("./mockTenants")>("./mockTenants");
-  return { ...actual, listActiveTenants: vi.fn() };
-});
 
 describe("TenantList", () => {
-  afterEach(() => {
-    cleanup();
-    vi.clearAllMocks();
+  beforeEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it("renders an entry for every active tenant", () => {
-    vi.mocked(listActiveTenants).mockReturnValue([
-      { slug: "dpw-eu", name: "DPW EU", active: true },
-      { slug: "nedbank", name: "Nedbank", active: true },
-    ]);
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders an entry for every tenant returned by the API", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            tenants: [
+              { slug: "dpw-eu", name: "DPW EU" },
+              { slug: "nedbank", name: "Nedbank" },
+            ],
+          }),
+      })
+    );
+
     render(<TenantList lang="en" />);
-    expect(screen.getByText("DPW EU")).toBeTruthy();
+
+    expect(await screen.findByText("DPW EU")).toBeTruthy();
     expect(screen.getByText("Nedbank")).toBeTruthy();
     expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 
-  it("renders an empty state when there are no active tenants", () => {
-    vi.mocked(listActiveTenants).mockReturnValue([]);
+  it("posts to /api/tenant/list", () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ tenants: [] }) });
+    vi.stubGlobal("fetch", fetchSpy);
+
     render(<TenantList lang="en" />);
-    expect(screen.getByText(/no active tenants/i)).toBeTruthy();
+
+    expect(fetchSpy).toHaveBeenCalledWith("/api/tenant/list", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("renders an empty state when the API returns no tenants", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ tenants: [] }) })
+    );
+
+    render(<TenantList lang="en" />);
+
+    expect(await screen.findByText(/no active tenants/i)).toBeTruthy();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("renders an empty state when the fetch fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network failure")));
+
+    render(<TenantList lang="en" />);
+
+    expect(await screen.findByText(/no active tenants/i)).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
   });
 });

@@ -4,6 +4,10 @@
 ***
 
 ## 0.0.0
+### 0.0.4
+#### 2026-07-15
++ Tenant list on the urup home page now shows live tenants from the tenant API, replacing the placeholder list used during development
++ Fixed the tenant list showing fewer tenants than the API actually returned — `urup` was being incorrectly excluded from its own list
 ### 0.0.3
 #### 2026-07-15
 + Fixed magic-link login always failing with "code expired or already used" — the sign-in page was reading the wrong URL parameter and never picked up the actual login token
