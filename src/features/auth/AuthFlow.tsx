@@ -12,6 +12,7 @@ const AuthFlow = forwardRef<AuthFlowHandle, AuthFlowProps>(function AuthFlow(
   {
     code,
     tenantCode,
+    lang,
     logo,
     hideLoginButton = false,
     onSignInSuccess,
@@ -47,7 +48,7 @@ const AuthFlow = forwardRef<AuthFlowHandle, AuthFlowProps>(function AuthFlow(
       const res = await fetch(SIGNIN_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: authCode }),
+        body: JSON.stringify({ code: authCode, tenantCode, lang }),
       });
       const data = await res.json();
       if (res.ok) {

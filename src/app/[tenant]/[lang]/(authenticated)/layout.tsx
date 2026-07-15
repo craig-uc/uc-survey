@@ -17,7 +17,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (isHydrated && !user) {
-      router.replace(`/${tenant}/${lang}/auth`);
+      router.replace(`/${tenant}/${lang}/admin/auth`);
     }
   }, [user, isHydrated, router, tenant, lang]);
 

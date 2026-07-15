@@ -17,10 +17,17 @@ const mockApplySession = vi.fn();
 vi.mock("@/features/auth", () => ({
   AuthFlow: (props: {
     code?: string;
+    tenantCode?: string;
+    lang?: string;
     onSignInSuccess?: (data: AuthSessionData) => void;
     onSignInError?: () => void;
   }) => (
-    <div data-testid="auth-flow" data-code={props.code ?? ""}>
+    <div
+      data-testid="auth-flow"
+      data-code={props.code ?? ""}
+      data-tenant-code={props.tenantCode ?? ""}
+      data-lang={props.lang ?? ""}
+    >
       AuthFlow
       <button onClick={() => props.onSignInSuccess?.({ user: "u1", tenant_code: "acme", app_settings: {} as never })}>
         trigger-success
@@ -42,8 +49,8 @@ describe("SignInPage", () => {
     mockUseParams.mockReturnValue({ tenant: "acme", lang: "en" });
   });
 
-  it("passes the code query param through to AuthFlow", async () => {
-    mockUseSearchParams.mockReturnValue(new URLSearchParams("code=abc123"));
+  it("passes the token query param through to AuthFlow as the code", async () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("token=abc123"));
 
     render(<SignInPage />);
 
@@ -51,7 +58,7 @@ describe("SignInPage", () => {
     expect(authFlow.dataset.code).toBe("abc123");
   });
 
-  it("falls back to NoCode when no code is present in the URL", async () => {
+  it("falls back to NoCode when no token is present in the URL", async () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams(""));
 
     render(<SignInPage />);
@@ -60,8 +67,28 @@ describe("SignInPage", () => {
     expect(authFlow.dataset.code).toBe("NoCode");
   });
 
-  it("applies the session data and redirects to the tenant/lang home page on sign-in success", async () => {
+  it("ignores a code param, since the magic link uses token", async () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams("code=abc123"));
+
+    render(<SignInPage />);
+
+    const authFlow = await screen.findByTestId("auth-flow");
+    expect(authFlow.dataset.code).toBe("NoCode");
+  });
+
+  it("passes the tenant and lang route params through to AuthFlow", async () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("token=abc123"));
+    mockUseParams.mockReturnValue({ tenant: "acme", lang: "af" });
+
+    render(<SignInPage />);
+
+    const authFlow = await screen.findByTestId("auth-flow");
+    expect(authFlow.dataset.tenantCode).toBe("acme");
+    expect(authFlow.dataset.lang).toBe("af");
+  });
+
+  it("applies the session data and redirects to the tenant/lang home page on sign-in success", async () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("token=abc123"));
 
     render(<SignInPage />);
     fireEvent.click(await screen.findByText("trigger-success"));
@@ -71,7 +98,7 @@ describe("SignInPage", () => {
   });
 
   it("redirects to the login page on sign-in error", async () => {
-    mockUseSearchParams.mockReturnValue(new URLSearchParams("code=bad-code"));
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("token=bad-code"));
 
     render(<SignInPage />);
     fireEvent.click(await screen.findByText("trigger-error"));

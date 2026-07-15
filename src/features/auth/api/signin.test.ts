@@ -54,6 +54,7 @@ describe("POST /api/auth/signin", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: false,
+        status: 401,
         json: () => Promise.resolve({ error: "Code expired" }),
       })
     );
@@ -63,6 +64,28 @@ describe("POST /api/auth/signin", () => {
     expect(res.status).toBe(403);
     const data = await res.json();
     expect(data.error).toBeTruthy();
+  });
+
+  it("logs the upstream status and body when the tracking API rejects the code", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ error: "Invalid tenant" }),
+      })
+    );
+
+    const { POST } = await import("./signin");
+    await POST(makeRequest({ code: "bad-code", tenantCode: "acme" }));
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Sign-in upstream rejected"),
+      401,
+      { error: "Invalid tenant" }
+    );
+    consoleErrorSpy.mockRestore();
   });
 
   it("returns 200 with user data and sets auth_token cookie on success", async () => {
@@ -95,5 +118,41 @@ describe("POST /api/auth/signin", () => {
     expect(res.status).toBe(500);
     const data = await res.json();
     expect(data.error).toBeTruthy();
+  });
+
+  it("defaults tenant-code to 'urup' and userLanguage to 'en' when not provided", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(successPayload),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const { POST } = await import("./signin");
+    await POST(makeRequest({ code: "valid-code" }));
+
+    const [, options] = fetchSpy.mock.calls[0];
+    const upstreamBody = JSON.parse(options.body);
+    expect(upstreamBody["tenant-code"]).toBe("urup");
+    expect(upstreamBody.userLanguage).toBe("en");
+    expect(upstreamBody.tenantCode).toBeUndefined();
+    expect(upstreamBody.lang).toBeUndefined();
+  });
+
+  it("forwards the provided tenantCode and lang as tenant-code and userLanguage", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(successPayload),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const { POST } = await import("./signin");
+    await POST(makeRequest({ code: "valid-code", tenantCode: "acme", lang: "af" }));
+
+    const [, options] = fetchSpy.mock.calls[0];
+    const upstreamBody = JSON.parse(options.body);
+    expect(upstreamBody["tenant-code"]).toBe("acme");
+    expect(upstreamBody.userLanguage).toBe("af");
+    expect(upstreamBody.tenantCode).toBeUndefined();
+    expect(upstreamBody.lang).toBeUndefined();
   });
 });

@@ -4,6 +4,12 @@
 ***
 
 ## 0.0.0
+### 0.0.3
+#### 2026-07-15
++ Fixed magic-link login always failing with "code expired or already used" — the sign-in page was reading the wrong URL parameter and never picked up the actual login token
++ Fixed unauthenticated visits to the home page (and post-login redirects) landing on a broken login URL that incorrectly displayed "Survey Not Found"
++ Sign-in now correctly passes tenant and language through to the backend, defaulting to `urup` and `en` when not specified
++ Added server-side logging of the reason a sign-in attempt is rejected, to make future login issues easier to diagnose
 ### 0.0.2
 #### 2026-07-15
 + Login form now submits on Enter, not just on button click

@@ -295,6 +295,36 @@ describe("AuthFlow", () => {
       expect(screen.getByRole("status")).not.toBeNull();
       expect(screen.getByText("Finalizing...")).not.toBeNull();
     });
+
+    it("includes tenantCode and lang in the sign-in request body when provided", async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ user: "u1", tenant_code: "acme", app_settings: {} }),
+      });
+      vi.stubGlobal("fetch", fetchSpy);
+
+      render(<AuthFlow code="valid-code" tenantCode="acme" lang="af" />);
+
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+      const [, options] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(options.body);
+      expect(body).toEqual({ code: "valid-code", tenantCode: "acme", lang: "af" });
+    });
+
+    it("omits tenantCode and lang from the sign-in request body when not provided", async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ user: "u1", tenant_code: "acme", app_settings: {} }),
+      });
+      vi.stubGlobal("fetch", fetchSpy);
+
+      render(<AuthFlow code="valid-code" />);
+
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+      const [, options] = fetchSpy.mock.calls[0];
+      const body = JSON.parse(options.body);
+      expect(body).toEqual({ code: "valid-code" });
+    });
   });
 
   describe("onStepChange", () => {

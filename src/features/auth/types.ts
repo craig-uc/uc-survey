@@ -29,6 +29,7 @@ export interface AuthFlowHandle {
 export interface AuthFlowProps {
   code?: string;
   tenantCode?: string;
+  lang?: string;
   logo?: React.ReactNode;
   hideLoginButton?: boolean;
   onSignInSuccess?: (data: AuthSessionData) => void;

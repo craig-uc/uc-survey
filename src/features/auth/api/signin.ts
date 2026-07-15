@@ -11,12 +11,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
     }
 
+    body["tenant-code"] = body.tenantCode || "urup";
+    delete body.tenantCode;
+    body.userLanguage = body.lang || "en";
+    delete body.lang;
     body.account = process.env.ACCOUNT;
     body.application = process.env.APPLICATION;
     body.appId = process.env.TENANT_APP;
     body.environment = process.env.ENVIRONMENT;
     body.page = "SignIn";
-    body.userLanguage = "en";
     body.event = "login-code";
 
     const upstream = await fetch(process.env.TRACKING_API + "event-consumer", {
@@ -29,6 +32,7 @@ export async function POST(req: NextRequest) {
     const data = await upstream.json();
 
     if (!upstream.ok) {
+      console.error("Sign-in upstream rejected the code:", upstream.status, data);
       return NextResponse.json(
         { error: "Code has expired or has already been used" },
         { status: 403 }

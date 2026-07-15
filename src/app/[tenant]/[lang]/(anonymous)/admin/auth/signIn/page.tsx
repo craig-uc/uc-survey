@@ -6,7 +6,7 @@ import GlassPanel from "@/components/GlassPanel";
 import { AuthFlow, useApplySession } from "@/features/auth";
 
 function SignInContent() {
-  const code = useSearchParams().get("code") || "NoCode";
+  const code = useSearchParams().get("token") || "NoCode";
   const router = useRouter();
   const { tenant, lang } = useParams<{ tenant: string; lang: string }>();
   const applySession = useApplySession();
@@ -16,6 +16,8 @@ function SignInContent() {
       <div className="min-h-full flex items-center justify-center">
         <AuthFlow
           code={code}
+          tenantCode={tenant}
+          lang={lang}
           onSignInSuccess={(data) => {
             applySession(data);
             router.push(`/${tenant}/${lang}/home`);
