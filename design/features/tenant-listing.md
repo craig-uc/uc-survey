@@ -11,7 +11,7 @@ Tenant is purely URL-driven today (`src/features/tenant/getTenantCode.ts` defaul
 ## Decision
 `home/page.tsx` branches on `tenantCode`:
 - `tenantCode === "urup"` → render `TenantList`, a clickable list of active tenants.
-- any other tenant → render the survey listing (see `design/features/survey-listing.md`) scoped to that tenant.
+- any other tenant → render the survey listing (see `design/survey-listing.md`) scoped to that tenant.
 
 Clicking a tenant entry in `TenantList` navigates to `/{tenant.slug}/{lang}/home`. For any client tenant this renders that tenant's own survey listing. `urup` now appears in its own list (see below) — clicking it navigates to `/urup/{lang}/home`, which re-renders `TenantList` itself; this is accepted as correct (a way to return to the top-level tenant list), not a bug. No new route is needed for the drill-down page; `home/page.tsx` itself is the shared entry point for both views.
 
@@ -76,5 +76,5 @@ The `/api/applications` fetch and the "Welcome to U.R.UP Connect" hero content a
 - `home/page.tsx` loses its `/api/applications` dependency (which pointed at a non-existent route) — a net simplification.
 - `mockTenants.ts` / `mockTenants.test.ts` are removed; tenant data now depends on `TENANT_API` being reachable and correctly configured (`.env.local` already sets it).
 - `TenantList` gains a loading window between mount and its fetch resolving — briefly renders the empty state before real data (or an empty result) arrives. Acceptable for this internal, low-traffic operator view; revisit with an explicit loading state if it proves confusing.
-- Survey-listing (see `design/features/survey-listing.md`) becomes reachable both as a client tenant's own home page and as `urup`'s drill-down target — it must not assume it's only ever reached one way.
+- Survey-listing (see `design/survey-listing.md`) becomes reachable both as a client tenant's own home page and as `urup`'s drill-down target — it must not assume it's only ever reached one way.
 - Since `urup` appears in its own list, clicking it navigates back to `/urup/{lang}/home`, re-rendering `TenantList` — a self-loop, not a dead end.

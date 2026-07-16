@@ -4,6 +4,10 @@
 ***
 
 ## 0.0.0
+### 0.0.5
+#### 2026-07-16
++ Added a design doc for the Survey object's persisted DB schema (MySQL) — UUID primary key, tenant-scoped unique slug, lifecycle fields (status/pendingSubState/version), and UTC-safe date columns
++ Reorganized design docs so all Survey-specific docs live directly under `design/`, separate from other feature docs kept in `design/features/`
 ### 0.0.4
 #### 2026-07-15
 + Tenant list on the urup home page now shows live tenants from the tenant API, replacing the placeholder list used during development

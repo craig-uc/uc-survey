@@ -9,7 +9,7 @@ Tenants can run multiple concurrent surveys, each identified by a slug unique to
 ## Decision
 Add a route at `/<tenant>/<lang>/(anonymous)/<survey>` that:
 1. Looks up whether `<tenant>` has a survey with slug `<survey>` in a mock data module.
-2. If no match, renders a not-found state (see `design/features/survey-not-found.md`).
+2. If no match, renders a not-found state (see `design/survey-not-found.md`).
 3. If a match exists, computes a phase from the survey's `status` and nullable `startAt`/`endAt`, and renders the matching step — `pre_start`, `intro`, or `closing` (per the three existing step docs) — at the **same URL**. No `redirect()` and no `notFound()` are used; the decision tree is resolved by conditional rendering.
 
 ## Design
@@ -60,7 +60,7 @@ Flow: `findSurvey(params.tenant, params.survey)` → if `undefined`, render `Not
 The existing `(anonymous)` route group folder was found on disk as `(anonymous))` — a stray extra closing paren, cosmetic only (route groups aren't part of the URL; nothing in code referenced the literal path). Renamed to `(anonymous)` as part of this change, since the new `[survey]` route lives inside it.
 
 ## Alternatives considered
-- **`notFound()` / `not-found.tsx`** for the missing-survey case — rejected. That mechanism changes the actual HTTP status and triggers Next's route-segment error boundary; a mock-array lookup miss is an ordinary data-not-found, not a routing failure. See `design/features/survey-not-found.md`.
+- **`notFound()` / `not-found.tsx`** for the missing-survey case — rejected. That mechanism changes the actual HTTP status and triggers Next's route-segment error boundary; a mock-array lookup miss is an ordinary data-not-found, not a routing failure. See `design/survey-not-found.md`.
 - **Async server component with `Promise<params>`** for the route page — rejected. It would be the second async server-component page in the repo and the first with any test coverage at all; there's no established pattern for testing one, so it would need a new, unproven test approach. The synchronous client-component pattern already has a working, tested precedent.
 - **Server-side `redirect()` to distinct `/prestart`, `/closing`, `/intro` URLs** — rejected per explicit product decision: the respondent stays on one URL throughout.
 

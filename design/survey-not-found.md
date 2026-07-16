@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-The survey landing route (`design/features/survey-routing.md`) resolves `/<tenant>/<lang>/(anonymous)/<survey>` against a mock data lookup keyed on tenant + slug. Unlike the `pre_start`/`intro`/`closing` steps — which only apply to a `Survey` that was actually found — there was no defined behaviour for a tenant/slug combination that matches no survey at all (a typo'd link, a survey removed from the mock data, a slug meant for a different tenant).
+The survey landing route (`design/survey-routing.md`) resolves `/<tenant>/<lang>/(anonymous)/<survey>` against a mock data lookup keyed on tenant + slug. Unlike the `pre_start`/`intro`/`closing` steps — which only apply to a `Survey` that was actually found — there was no defined behaviour for a tenant/slug combination that matches no survey at all (a typo'd link, a survey removed from the mock data, a slug meant for a different tenant).
 
 ## Decision
 When `findSurvey(tenantCode, slug)` returns `undefined`, render a `NotFoundStep`: a static, translated-later message telling the visitor no survey matches this link, at the **same URL** — not a redirect, and not Next's `notFound()`/`not-found.tsx` 404 mechanism.
