@@ -4,6 +4,9 @@
 ***
 
 ## 0.0.0
+### 0.0.7
+#### 2026-07-17
++ Every page under `/admin/*` now shows the breadcrumb bar — previously only the dashboard page had one. `/admin/home` shows a single active "Home" crumb, `/admin/surveys` shows Home / Surveys, and `/admin/surveys/[surveyId]` shows Home / Surveys / the survey id
 ### 0.0.6
 #### 2026-07-17
 + Login now lives at the site root (`/`) as a single entry point for every tenant, replacing the old per-tenant login page
