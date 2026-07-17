@@ -1,25 +1,24 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useGlobalState } from "@/app/context/GlobalStateContext";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
-export default function DashboardLayout({
-                                          children,
-                                        }: {
+export default function AdminLayout({
+                                       children,
+                                     }: {
   children: React.ReactNode;
 }) {
   const { user, isHydrated } = useGlobalState();
   const router = useRouter();
-  const { tenant, lang } = useParams<{ tenant: string; lang: string }>();
 
   useEffect(() => {
     if (isHydrated && !user) {
-      router.replace(`/${tenant}/${lang}/admin/auth`);
+      router.replace("/");
     }
-  }, [user, isHydrated, router, tenant, lang]);
+  }, [user, isHydrated, router]);
 
   // Prevent flashing of protected content while checking authentication
   if (!isHydrated || !user) {

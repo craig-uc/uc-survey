@@ -74,7 +74,3 @@ export function findSurvey(tenantCode: string, slug: string): Survey | undefined
   const live = candidates.find((survey) => survey.status === "active" || survey.status === "closed");
   return live ?? candidates.sort((a, b) => b.version - a.version)[0];
 }
-
-export function listSurveysByTenant(tenantCode: string): Survey[] {
-  return MOCK_SURVEYS.filter((survey) => survey.tenantCode === tenantCode);
-}

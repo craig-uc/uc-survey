@@ -5,11 +5,9 @@ import SignInPage from "./page";
 import type { AuthSessionData } from "@/features/auth";
 
 const mockUseSearchParams = vi.fn();
-const mockUseParams = vi.fn();
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useSearchParams: () => mockUseSearchParams(),
-  useParams: () => mockUseParams(),
   useRouter: () => ({ push: mockPush }),
 }));
 
@@ -46,7 +44,6 @@ describe("SignInPage", () => {
   beforeEach(() => {
     mockPush.mockClear();
     mockApplySession.mockClear();
-    mockUseParams.mockReturnValue({ tenant: "acme", lang: "en" });
   });
 
   it("passes the token query param through to AuthFlow as the code", async () => {
@@ -76,33 +73,32 @@ describe("SignInPage", () => {
     expect(authFlow.dataset.code).toBe("NoCode");
   });
 
-  it("passes the tenant and lang route params through to AuthFlow", async () => {
+  it("passes the fixed urup/en tenant and language to AuthFlow", async () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams("token=abc123"));
-    mockUseParams.mockReturnValue({ tenant: "acme", lang: "af" });
 
     render(<SignInPage />);
 
     const authFlow = await screen.findByTestId("auth-flow");
-    expect(authFlow.dataset.tenantCode).toBe("acme");
-    expect(authFlow.dataset.lang).toBe("af");
+    expect(authFlow.dataset.tenantCode).toBe("urup");
+    expect(authFlow.dataset.lang).toBe("en");
   });
 
-  it("applies the session data and redirects to the tenant/lang home page on sign-in success", async () => {
+  it("applies the session data and redirects to the admin home page on sign-in success", async () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams("token=abc123"));
 
     render(<SignInPage />);
     fireEvent.click(await screen.findByText("trigger-success"));
 
     expect(mockApplySession).toHaveBeenCalledWith({ user: "u1", tenant_code: "acme", app_settings: {} });
-    expect(mockPush).toHaveBeenCalledWith("/acme/en/home");
+    expect(mockPush).toHaveBeenCalledWith("/admin/home");
   });
 
-  it("redirects to the login page on sign-in error", async () => {
+  it("redirects to the root login page on sign-in error", async () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams("token=bad-code"));
 
     render(<SignInPage />);
     fireEvent.click(await screen.findByText("trigger-error"));
 
-    expect(mockPush).toHaveBeenCalledWith("/acme/en/admin/auth");
+    expect(mockPush).toHaveBeenCalledWith("/");
   });
 });

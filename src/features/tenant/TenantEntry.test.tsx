@@ -1,25 +1,45 @@
 import React from "react";
-import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import TenantEntry from "./TenantEntry";
+import { useTenant } from "./useTenant";
+
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
+const mockSetTenant = vi.fn();
+vi.mock("./useTenant", () => ({
+  useTenant: vi.fn(),
+}));
 
 describe("TenantEntry", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useTenant).mockReturnValue({ tenant: null, tenantCode: "urup", setTenant: mockSetTenant });
+  });
+
   afterEach(cleanup);
 
   it("renders the tenant name", () => {
-    render(<TenantEntry tenant={{ slug: "dpw-eu", name: "DPW EU" }} lang="en" />);
+    render(<TenantEntry tenant={{ slug: "dpw-eu", name: "DPW EU" }} />);
     expect(screen.getByText("DPW EU")).toBeTruthy();
   });
 
-  it("links to the tenant's own home page in the current language", () => {
-    render(<TenantEntry tenant={{ slug: "dpw-eu", name: "DPW EU" }} lang="en" />);
-    const link = screen.getByRole("link");
-    expect(link.getAttribute("href")).toBe("/dpw-eu/en/home");
+  it("sets the active tenant and navigates to the tenant-agnostic survey list on click", () => {
+    render(<TenantEntry tenant={{ slug: "dpw-eu", name: "DPW EU" }} />);
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(mockSetTenant).toHaveBeenCalledWith("dpw-eu");
+    expect(mockPush).toHaveBeenCalledWith("/admin/surveys");
   });
 
-  it("links using the language passed in, not a hardcoded default", () => {
-    render(<TenantEntry tenant={{ slug: "nedbank", name: "Nedbank" }} lang="fr" />);
-    const link = screen.getByRole("link");
-    expect(link.getAttribute("href")).toBe("/nedbank/fr/home");
+  it("sets whichever tenant slug is passed in", () => {
+    render(<TenantEntry tenant={{ slug: "nedbank", name: "Nedbank" }} />);
+    fireEvent.click(screen.getByRole("button"));
+
+    expect(mockSetTenant).toHaveBeenCalledWith("nedbank");
+    expect(mockPush).toHaveBeenCalledWith("/admin/surveys");
   });
 });

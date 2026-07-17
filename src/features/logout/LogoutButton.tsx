@@ -37,9 +37,6 @@ export function LogoutButton({ variant = "button", label = "logout", style, clas
   const displayLabel = apiLabel ?? label;
 
   const handleLogout = async () => {
-    const currentTenant = tenant;
-    const currentLang = lang;
-
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {
@@ -50,13 +47,7 @@ export function LogoutButton({ variant = "button", label = "logout", style, clas
     setTenant(null);
     localStorage.setItem("identifier", `anon_${crypto.randomUUID()}`);
 
-    const path = !currentTenant
-      ? "/"
-      : currentLang
-        ? `/${currentTenant}/${currentLang}`
-        : `/${currentTenant}`;
-
-    router.push(path);
+    router.push("/");
   };
 
   if (variant === "link") {

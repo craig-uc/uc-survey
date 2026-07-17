@@ -5,11 +5,7 @@ import GlassPanel from "@/components/GlassPanel";
 import TenantEntry from "./TenantEntry";
 import { Tenant } from "./types";
 
-interface TenantListProps {
-  lang: string;
-}
-
-export default function TenantList({ lang }: TenantListProps) {
+export default function TenantList() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
 
   useEffect(() => {
@@ -39,7 +35,7 @@ export default function TenantList({ lang }: TenantListProps) {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           {tenants.map((tenant) => (
-            <TenantEntry key={tenant.slug} tenant={tenant} lang={lang} />
+            <TenantEntry key={tenant.slug} tenant={tenant} />
           ))}
         </div>
       )}

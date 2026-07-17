@@ -1,7 +1,7 @@
 # Survey Landing Route
 
 ## Status
-Accepted
+Accepted — the "synchronous `params`" sub-decision below was proven wrong in practice (`params` is a Promise even in a Client Component on this Next.js version, and accessing it synchronously throws at runtime) and has been corrected in place: the route page now unwraps `params` via a `useEffect`/`useState` pair rather than reading it directly. Everything else in this doc (route shape, phase computation, not-found handling, same-URL transitions) is unchanged.
 
 ## Context
 Tenants can run multiple concurrent surveys, each identified by a slug unique to that tenant. There was no `Survey` entity anywhere in the codebase — only a conceptual sketch in `migrationDesign.md` (external-API-backed, with translations/telemetry/an admin console — all aspirational, not built). Three Draft docs already existed for the destination steps (`design/survey-step-intro.md`, `-prestart.md`, `-closing.md`) but nothing resolved a URL to one of them, and there was no "not found" concept at all. This doc covers the route that ties those states together, using mock in-memory data since the external API/admin console described in `migrationDesign.md` don't exist yet.
@@ -52,16 +52,19 @@ Boundary equality (`now === startAt` or `now === endAt`) falls through to `intro
 - **`ClosingStep`** and **`NotFoundStep`** are static, terminal, no navigation.
 
 ### Route page (`src/app/[tenant]/[lang]/(anonymous)/[survey]/page.tsx`)
-A **client component with synchronous params** (`{ params }: { params: { tenant: string; lang: string; survey: string } }`) — not an async server component with `Promise<params>`. This matches the only tested page pattern in the repo (`dashboard/[appId]/page.tsx`); the one pre-existing async server-component page (`src/app/[tenant]/page.tsx`) has no test coverage and no established test pattern.
+A **client component that unwraps a Promise `params`** (`{ params }: { params: Promise<{ tenant: string; lang: string; survey: string }> }`) — not a synchronous prop, and not an `await`-based async server component either. `params` is a Promise on this Next.js version regardless of Server/Client status; the route resolves it in a `useEffect` (`params.then(...)`) and stores the result in `useState`, rendering `null` until it settles. This mirrors the async-data pattern already used throughout the codebase for `fetch` calls (e.g. `TenantList`, `SurveyListing`) rather than React's `use()` + Suspense — `use()` requires a Suspense boundary to catch the initial throw-to-suspend, which the bare page tree here doesn't have, and wiring one up added test complexity (`vitest`/`@testing-library/react` doesn't resolve the retry without extra flushing) for no behavioral benefit over the simpler effect-based unwrap.
 
-Flow: `findSurvey(params.tenant, params.survey)` → if `undefined`, render `NotFoundStep`. Otherwise compute the initial phase via `getSurveyPhase(survey, new Date())`, held in local state; render the matching step. `PreStartStep`'s `onExpire` flips that state to `intro` — the same-URL, no-reload transition `survey-step-prestart.md` requires.
+Flow: once `params` resolves, `findSurvey(tenant, survey)` → if `undefined`, render `NotFoundStep`. Otherwise compute the initial phase via `getSurveyPhase(survey, new Date())`, held in local state; render the matching step. `PreStartStep`'s `onExpire` flips that state to `intro` — the same-URL, no-reload transition `survey-step-prestart.md` requires.
+
+**Note:** `home/page.tsx`, `surveys/[surveyId]/page.tsx`, and `dashboard/[appId]/page.tsx` had the identical synchronous-`params` bug (same root cause, not specific to this route) and were fixed the same way as part of this correction.
 
 ### Route group rename
 The existing `(anonymous)` route group folder was found on disk as `(anonymous))` — a stray extra closing paren, cosmetic only (route groups aren't part of the URL; nothing in code referenced the literal path). Renamed to `(anonymous)` as part of this change, since the new `[survey]` route lives inside it.
 
 ## Alternatives considered
 - **`notFound()` / `not-found.tsx`** for the missing-survey case — rejected. That mechanism changes the actual HTTP status and triggers Next's route-segment error boundary; a mock-array lookup miss is an ordinary data-not-found, not a routing failure. See `design/survey-not-found.md`.
-- **Async server component with `Promise<params>`** for the route page — rejected. It would be the second async server-component page in the repo and the first with any test coverage at all; there's no established pattern for testing one, so it would need a new, unproven test approach. The synchronous client-component pattern already has a working, tested precedent.
+- **Async server component with `await params`** for the route page — rejected. It would be the second async server-component page in the repo and the first with any test coverage at all; there's no established pattern for testing one. (Note: the original "synchronous client-component `params`" alternative chosen instead of this was later found to not work at all on this Next.js version — `params` is a Promise regardless of Server/Client status — and was corrected to a Client Component that unwraps the `params` Promise via `useEffect`, not this rejected alternative.)
+- **`React.use(params)` + a `<Suspense>` boundary** — considered during the later correction, rejected. It's the idiomatic React 19 way to unwrap a promise prop, but the bare page tree has no Suspense boundary of its own to catch the initial suspend, and getting it working under `vitest`/`@testing-library/react` needed extra, fragile flushing with no behavioral upside over the simpler `useEffect`-based unwrap already used elsewhere in this codebase for async data.
 - **Server-side `redirect()` to distinct `/prestart`, `/closing`, `/intro` URLs** — rejected per explicit product decision: the respondent stays on one URL throughout.
 
 ## Consequences

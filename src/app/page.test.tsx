@@ -8,10 +8,6 @@ vi.mock("@/features/identity", () => ({
   IdentityInitializer: () => null,
 }));
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
-}));
-
 vi.mock("@/features/auth", () => ({
   AuthFlow: React.forwardRef(function MockAuthFlow(
     props: {

@@ -4,6 +4,12 @@
 ***
 
 ## 0.0.0
+### 0.0.6
+#### 2026-07-17
++ Login now lives at the site root (`/`) as a single entry point for every tenant, replacing the old per-tenant login page
++ Signed-in users now work under `/admin/*`; home (`/admin/home`) is now always the tenant picker, no longer doubling as a survey list for non-urup tenants
++ The survey list is now its own page (`/admin/surveys`), reached by picking a tenant from home
++ Logging out now always returns to the root login page, regardless of which tenant you were viewing
 ### 0.0.5
 #### 2026-07-16
 + Added a design doc for the Survey object's persisted DB schema (MySQL) — UUID primary key, tenant-scoped unique slug, lifecycle fields (status/pendingSubState/version), and UTC-safe date columns

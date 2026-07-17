@@ -22,7 +22,7 @@ CREATE TABLE surveys (
   id                CHAR(36)     NOT NULL,
   tenant_code       VARCHAR(50)  NOT NULL DEFAULT '',
   name              VARCHAR(255) NOT NULL DEFAULT '',
-  description       TEXT         NOT NULL DEFAULT '',
+  description       TEXT         NOT NULL,
   slug              VARCHAR(150) NOT NULL DEFAULT '',
   status            VARCHAR(20)  NOT NULL DEFAULT '',
   pending_sub_state VARCHAR(20)  NOT NULL DEFAULT '',

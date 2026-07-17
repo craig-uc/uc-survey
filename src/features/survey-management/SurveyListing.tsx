@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassPanel from "@/components/GlassPanel";
-import { Survey, SurveyStatus, listSurveysByTenant } from "@/features/survey";
+import { Survey, SurveyStatus } from "@/features/survey";
 import { canEdit, canDelete } from "./permissions";
 import { createSurvey } from "./createSurvey";
 import { createNewVersion } from "./createNewVersion";
 
 interface SurveyListingProps {
   tenantCode: string;
-  lang: string;
 }
 
 const SECTIONS: { key: SurveyStatus; label: string }[] = [
@@ -20,12 +19,29 @@ const SECTIONS: { key: SurveyStatus; label: string }[] = [
   { key: "deleted", label: "Deleted" },
 ];
 
-export default function SurveyListing({ tenantCode, lang }: SurveyListingProps) {
+export default function SurveyListing({ tenantCode }: SurveyListingProps) {
   const router = useRouter();
-  const [surveys, setSurveys] = useState<Survey[]>(() => listSurveysByTenant(tenantCode));
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`/api/survey/list?tenantCode=${encodeURIComponent(tenantCode)}`)
+      .then((res) => (res.ok ? res.json() : { surveys: [] }))
+      .then((data) => {
+        if (!cancelled) setSurveys(data.surveys ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setSurveys([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantCode]);
 
   function goToEditor(survey: Survey) {
-    router.push(`/${tenantCode}/${lang}/surveys/${survey.id}`);
+    router.push(`/admin/surveys/${survey.id}`);
   }
 
   function handleAdd() {

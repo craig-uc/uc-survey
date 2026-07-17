@@ -2,7 +2,6 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import SurveyListing from "./SurveyListing";
-import { listSurveysByTenant } from "@/features/survey";
 import { Survey } from "@/features/survey";
 
 const mockPush = vi.fn();
@@ -10,10 +9,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-vi.mock("@/features/survey", async () => {
-  const actual = await vi.importActual<typeof import("@/features/survey")>("@/features/survey");
-  return { ...actual, listSurveysByTenant: vi.fn() };
-});
+function stubSurveyFetch(surveys: Survey[]) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ surveys }) })
+  );
+}
 
 function survey(overrides: Partial<Survey>): Survey {
   return {
@@ -38,66 +39,81 @@ const DELETED = survey({ id: "deleted-1", name: "Removed Survey", status: "delet
 
 describe("SurveyListing", () => {
   beforeEach(() => {
-    vi.mocked(listSurveysByTenant).mockReturnValue([
-      ACTIVE,
-      PENDING_DESIGN,
-      PENDING_PUBLISHED,
-      CLOSED,
-      DELETED,
-    ]);
+    stubSurveyFetch([ACTIVE, PENDING_DESIGN, PENDING_PUBLISHED, CLOSED, DELETED]);
   });
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
-  it("groups surveys into their matching section", () => {
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
+  it("fetches surveys for the given tenant from the survey list API", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ surveys: [] }) });
+    vi.stubGlobal("fetch", fetchSpy);
 
-    expect(within(screen.getByTestId("section-active")).getByText(/Active Survey/)).toBeTruthy();
+    render(<SurveyListing tenantCode="dpw-eu" />);
+
+    await screen.findByText(/no active surveys/i);
+    expect(fetchSpy).toHaveBeenCalledWith("/api/survey/list?tenantCode=dpw-eu");
+  });
+
+  it("groups surveys into their matching section", async () => {
+    render(<SurveyListing tenantCode="dpw-eu" />);
+
+    expect(await within(screen.getByTestId("section-active")).findByText(/Active Survey/)).toBeTruthy();
     expect(within(screen.getByTestId("section-pending")).getByText(/Draft Survey/)).toBeTruthy();
     expect(within(screen.getByTestId("section-pending")).getByText(/Ready Survey/)).toBeTruthy();
     expect(within(screen.getByTestId("section-closed")).getByText(/Closed Survey/)).toBeTruthy();
     expect(within(screen.getByTestId("section-deleted")).getByText(/Removed Survey/)).toBeTruthy();
   });
 
-  it("shows the pending sub-state next to pending surveys", () => {
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
-    expect(within(screen.getByTestId("section-pending")).getByText(/design/i)).toBeTruthy();
+  it("shows the pending sub-state next to pending surveys", async () => {
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    expect(await within(screen.getByTestId("section-pending")).findByText(/design/i)).toBeTruthy();
     expect(within(screen.getByTestId("section-pending")).getByText(/published/i)).toBeTruthy();
   });
 
-  it("shows an empty-state message for a section with no surveys", () => {
-    vi.mocked(listSurveysByTenant).mockReturnValue([ACTIVE]);
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
-    expect(within(screen.getByTestId("section-closed")).getByText(/no closed surveys/i)).toBeTruthy();
+  it("shows an empty-state message for a section with no surveys", async () => {
+    stubSurveyFetch([ACTIVE]);
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    expect(await within(screen.getByTestId("section-closed")).findByText(/no closed surveys/i)).toBeTruthy();
   });
 
-  it("shows Edit for active and pending surveys, but not closed or deleted", () => {
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
+  it("shows an empty list for every section when the fetch fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network failure")));
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    expect(await within(screen.getByTestId("section-active")).findByText(/no active surveys/i)).toBeTruthy();
+  });
+
+  it("shows Edit for active and pending surveys, but not closed or deleted", async () => {
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    await screen.findByTestId("row-active-1");
     expect(within(screen.getByTestId("row-active-1")).queryByRole("button", { name: /edit/i })).toBeTruthy();
     expect(within(screen.getByTestId("row-pending-1")).queryByRole("button", { name: /edit/i })).toBeTruthy();
     expect(within(screen.getByTestId("row-closed-1")).queryByRole("button", { name: /edit/i })).toBeNull();
     expect(within(screen.getByTestId("row-deleted-1")).queryByRole("button", { name: /edit/i })).toBeNull();
   });
 
-  it("shows Delete only for pending-design and pending-review surveys", () => {
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
+  it("shows Delete only for pending-design and pending-review surveys", async () => {
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    await screen.findByTestId("row-pending-1");
     expect(within(screen.getByTestId("row-pending-1")).queryByRole("button", { name: /delete/i })).toBeTruthy();
     expect(within(screen.getByTestId("row-pending-2")).queryByRole("button", { name: /delete/i })).toBeNull();
     expect(within(screen.getByTestId("row-active-1")).queryByRole("button", { name: /delete/i })).toBeNull();
     expect(within(screen.getByTestId("row-closed-1")).queryByRole("button", { name: /delete/i })).toBeNull();
   });
 
-  it("navigates straight to the editor when editing a pending survey", () => {
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
+  it("navigates straight to the editor when editing a pending survey", async () => {
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    await screen.findByTestId("row-pending-1");
     fireEvent.click(within(screen.getByTestId("row-pending-1")).getByRole("button", { name: /edit/i }));
-    expect(mockPush).toHaveBeenCalledWith("/dpw-eu/en/surveys/pending-1");
+    expect(mockPush).toHaveBeenCalledWith("/admin/surveys/pending-1");
   });
 
-  it("bumps the version and moves it into Pending when editing an active survey", () => {
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
+  it("bumps the version and moves it into Pending when editing an active survey", async () => {
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    await screen.findByTestId("row-active-1");
     fireEvent.click(within(screen.getByTestId("row-active-1")).getByRole("button", { name: /edit/i }));
 
     // original active record is untouched and still shown in Active
@@ -107,25 +123,27 @@ describe("SurveyListing", () => {
     expect(within(pendingSection).getByText(/Active Survey/)).toBeTruthy();
     expect(within(pendingSection).getByText(/v2/)).toBeTruthy();
     expect(mockPush).toHaveBeenCalledTimes(1);
-    expect(mockPush.mock.calls[0][0]).toMatch(/^\/dpw-eu\/en\/surveys\//);
+    expect(mockPush.mock.calls[0][0]).toMatch(/^\/admin\/surveys\//);
   });
 
-  it("moves a survey to Deleted when Delete is clicked", () => {
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
+  it("moves a survey to Deleted when Delete is clicked", async () => {
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    await screen.findByTestId("row-pending-1");
     fireEvent.click(within(screen.getByTestId("row-pending-1")).getByRole("button", { name: /delete/i }));
 
     expect(within(screen.getByTestId("section-pending")).queryByTestId("row-pending-1")).toBeNull();
     expect(within(screen.getByTestId("section-deleted")).getByText(/Draft Survey/)).toBeTruthy();
   });
 
-  it("creates and navigates to a new survey when 'Add new survey' is clicked", () => {
-    render(<SurveyListing tenantCode="dpw-eu" lang="en" />);
+  it("creates and navigates to a new survey when 'Add new survey' is clicked", async () => {
+    render(<SurveyListing tenantCode="dpw-eu" />);
+    await screen.findByTestId("row-pending-1");
     fireEvent.click(screen.getByRole("button", { name: /add new survey/i }));
 
     const pendingSection = screen.getByTestId("section-pending");
     // two pre-existing pending rows + one newly created one
     expect(within(pendingSection).getAllByRole("listitem").length).toBe(3);
     expect(mockPush).toHaveBeenCalledTimes(1);
-    expect(mockPush.mock.calls[0][0]).toMatch(/^\/dpw-eu\/en\/surveys\//);
+    expect(mockPush.mock.calls[0][0]).toMatch(/^\/admin\/surveys\//);
   });
 });

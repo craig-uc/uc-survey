@@ -65,17 +65,19 @@ describe('DashboardPage', () => {
   });
 
   it('renders the app name as the page heading', async () => {
-    render(<DashboardPage params={{ appId: 'test-app' }} />, { wrapper: Wrapper });
+    render(<DashboardPage params={Promise.resolve({ appId: 'test-app' })} />, { wrapper: Wrapper });
     await act(async () => {});
 
     expect(screen.getAllByText('My App').length).toBeGreaterThan(0);
   });
 
-  it('renders breadcrumbs with Home and the app name', async () => {
-    render(<DashboardPage params={{ appId: 'test-app' }} />, { wrapper: Wrapper });
+  it('renders breadcrumbs with Home linking to the admin home page, and the app name', async () => {
+    render(<DashboardPage params={Promise.resolve({ appId: 'test-app' })} />, { wrapper: Wrapper });
     await act(async () => {});
 
-    expect(screen.getByText('Home')).not.toBeNull();
+    const homeLink = screen.getByText('Home');
+    expect(homeLink).not.toBeNull();
+    expect(homeLink.closest('a')?.getAttribute('href')).toBe('/admin/home');
     const appLabel = screen.getAllByText('My App');
     expect(appLabel.length).toBeGreaterThan(0);
   });
@@ -88,14 +90,14 @@ describe('DashboardPage', () => {
     const mockFetch = vi.fn();
     vi.stubGlobal('fetch', mockFetch);
 
-    render(<DashboardPage params={{ appId: 'test-app' }} />, { wrapper: Wrapper });
+    render(<DashboardPage params={Promise.resolve({ appId: 'test-app' })} />, { wrapper: Wrapper });
     await act(async () => {});
 
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it('shows the appId in the dashboard details section', async () => {
-    render(<DashboardPage params={{ appId: 'my-unique-app-id' }} />, { wrapper: Wrapper });
+    render(<DashboardPage params={Promise.resolve({ appId: 'my-unique-app-id' })} />, { wrapper: Wrapper });
     await act(async () => {});
 
     await waitFor(() => {

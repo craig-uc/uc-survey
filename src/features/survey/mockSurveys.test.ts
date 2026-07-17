@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { findSurvey, listSurveysByTenant } from "./mockSurveys";
+import { findSurvey } from "./mockSurveys";
 
 describe("findSurvey", () => {
   it("returns the survey matching both tenant and slug", () => {
@@ -53,19 +53,5 @@ describe("findSurvey", () => {
   it("excludes deleted surveys entirely, behaving as not found", () => {
     const survey = findSurvey("urup", "removed-survey");
     expect(survey).toBeUndefined();
-  });
-});
-
-describe("listSurveysByTenant", () => {
-  it("returns every survey record for the tenant, including every version and deleted ones", () => {
-    const surveys = listSurveysByTenant("urup");
-    // urup has: engagement-2026 v1 (active) + v2 (pending), future-launch, closed-survey, removed-survey
-    expect(surveys.length).toBeGreaterThanOrEqual(5);
-    expect(surveys.every((s) => s.tenantCode === "urup")).toBe(true);
-    expect(surveys.some((s) => s.status === "deleted")).toBe(true);
-  });
-
-  it("returns an empty array for a tenant with no surveys", () => {
-    expect(listSurveysByTenant("not-a-real-tenant")).toEqual([]);
   });
 });

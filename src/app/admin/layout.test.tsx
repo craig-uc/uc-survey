@@ -2,13 +2,12 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, act, cleanup } from "@testing-library/react";
 import { useGlobalState } from "@/app/context/GlobalStateContext";
-import DashboardLayout from "./layout";
+import AdminLayout from "./layout";
 
 const mockReplace = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
-  useParams: () => ({ tenant: "urup", lang: "en" }),
 }));
 
 vi.mock("@/app/context/GlobalStateContext", () => ({
@@ -23,7 +22,7 @@ vi.mock("@/components/layout/Footer", () => ({
   Footer: () => <div>Footer</div>,
 }));
 
-describe("(authenticated) DashboardLayout", () => {
+describe("AdminLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -32,20 +31,20 @@ describe("(authenticated) DashboardLayout", () => {
     cleanup();
   });
 
-  it("redirects to the tenant's admin/auth login page when hydrated with no user", async () => {
+  it("redirects to the root login page when hydrated with no user", async () => {
     vi.mocked(useGlobalState).mockReturnValue({ user: null, isHydrated: true } as ReturnType<typeof useGlobalState>);
 
     await act(async () => {
-      render(<DashboardLayout>{"child content"}</DashboardLayout>);
+      render(<AdminLayout>{"child content"}</AdminLayout>);
     });
 
-    expect(mockReplace).toHaveBeenCalledWith("/urup/en/admin/auth");
+    expect(mockReplace).toHaveBeenCalledWith("/");
   });
 
   it("does not redirect once hydrated with a signed-in user, and renders children", async () => {
     vi.mocked(useGlobalState).mockReturnValue({ user: "someone", isHydrated: true } as ReturnType<typeof useGlobalState>);
 
-    const renderResult = render(<DashboardLayout>{"child content"}</DashboardLayout>);
+    const renderResult = render(<AdminLayout>{"child content"}</AdminLayout>);
     await act(async () => {});
 
     expect(mockReplace).not.toHaveBeenCalled();
@@ -56,7 +55,7 @@ describe("(authenticated) DashboardLayout", () => {
     vi.mocked(useGlobalState).mockReturnValue({ user: null, isHydrated: false } as ReturnType<typeof useGlobalState>);
 
     await act(async () => {
-      render(<DashboardLayout>{"child content"}</DashboardLayout>);
+      render(<AdminLayout>{"child content"}</AdminLayout>);
     });
 
     expect(mockReplace).not.toHaveBeenCalled();

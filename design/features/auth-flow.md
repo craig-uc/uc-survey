@@ -43,7 +43,7 @@ interface AuthFlowProps {
 }
 ```
 
-`AuthStep` is `"login" | "sent" | "signing-in"`, exported from `@/features/auth`. `onStepChange` exists so a parent rendering the login button in an external `GlassPanel` navigation pane (rather than `AuthFlow`'s own inline button) can hide it once there's nothing left to submit — see `admin/auth/page.tsx` below.
+`AuthStep` is `"login" | "sent" | "signing-in"`, exported from `@/features/auth`. `onStepChange` exists so a parent rendering the login button in an external `GlassPanel` navigation pane (rather than `AuthFlow`'s own inline button) can hide it once there's nothing left to submit — see `src/app/page.tsx` below.
 
 ## Imperative handle
 
@@ -59,13 +59,13 @@ interface AuthFlowHandle {
 
 ### Enter-to-submit
 
-The email field's `<form>` has an `onKeyDown` handler that calls `submitLogin()` directly (with `preventDefault()`) whenever Enter is pressed, regardless of `hideLoginButton`. This is deliberate rather than relying on the browser's native implicit form submission: when `hideLoginButton` is set, the only visible "Login" control (e.g. the `GlassPanel` nav button in `admin/auth/page.tsx`) is rendered outside `AuthFlow`'s `<form>` entirely (`type="button"`, in a separate DOM subtree), so it can never be a form's native default button — Enter would otherwise do nothing in that layout.
+The email field's `<form>` has an `onKeyDown` handler that calls `submitLogin()` directly (with `preventDefault()`) whenever Enter is pressed, regardless of `hideLoginButton`. This is deliberate rather than relying on the browser's native implicit form submission: when `hideLoginButton` is set, the only visible "Login" control (e.g. the `GlassPanel` nav button in `src/app/page.tsx`) is rendered outside `AuthFlow`'s `<form>` entirely (`type="button"`, in a separate DOM subtree), so it can never be a form's native default button — Enter would otherwise do nothing in that layout.
 
 ### Reflecting busy state on an external button
 
 `onSubmittingChange` fires with `status === "Submitting..."` whenever `status` changes (mount included), regardless of whether submission was triggered by clicking `AuthFlow`'s own inline button or by pressing Enter. `AuthFlow`'s inline button already reflects this correctly on its own (its `disabled`/label are derived from the same internal state).
 
-When `hideLoginButton` is set, the visible button lives outside `AuthFlow` and manages its own busy/spinner state internally around its own `onClick` (see `StandardButton`'s [external loading override](standard-button.md#external-loading-override)) — it has no way to know a submission happened via Enter unless the parent tells it to. Consuming pages must wire `onSubmittingChange` to a `submitting` state and pass it through as `loading` on the button config (see `admin/auth/page.tsx` and `src/app/page.tsx`), or the external button will stay idle-looking while a keyboard-triggered submission is actually in flight.
+When `hideLoginButton` is set, the visible button lives outside `AuthFlow` and manages its own busy/spinner state internally around its own `onClick` (see `StandardButton`'s [external loading override](standard-button.md#external-loading-override)) — it has no way to know a submission happened via Enter unless the parent tells it to. Consuming pages must wire `onSubmittingChange` to a `submitting` state and pass it through as `loading` on the button config (see `src/app/page.tsx`), or the external button will stay idle-looking while a keyboard-triggered submission is actually in flight.
 
 `AuthSessionData` shape returned by `/api/auth/signin`:
 
@@ -143,7 +143,7 @@ import { AuthFlow } from "@/features/auth";
 
 ### Login button in GlassPanel navigation pane
 
-Implemented at `src/app/[tenant]/[lang]/(anonymous)/admin/auth/page.tsx`:
+Implemented at `src/app/page.tsx` — the app's single, universal login entry point (see `design/admin-routing-restructure.md`; there is no longer a separate per-tenant login page):
 
 ```tsx
 import { useRef, useState } from "react";
@@ -172,25 +172,30 @@ const [step, setStep] = useState<AuthStep>("login");
 
 `href="#"` is a placeholder — `submitLogin` always returns `false`, so `NavButton` never calls `router.push`. The nav button's `show` is tied to `onStepChange` so the button panel is empty once the step is `sent` (nothing left to submit); `GlassPanel`'s `Navigation` already filters out any button with `show === false`.
 
-### Sign-in callback page (receives code from URL)
+### Sign-in callback page (receives token from URL)
 
-Implemented at `src/app/[tenant]/[lang]/(anonymous)/admin/auth/signIn/page.tsx`:
+Implemented at `src/app/signIn/page.tsx` (root-level since `design/admin-routing-restructure.md` — login is a single, universal entry point, not per-tenant):
 
 ```tsx
 import { Suspense } from "react";
-import { useSearchParams, useRouter, useParams } from "next/navigation";
-import { AuthFlow } from "@/features/auth";
+import { useSearchParams, useRouter } from "next/navigation";
+import { AuthFlow, useApplySession } from "@/features/auth";
 
 function SignInContent() {
-  const code = useSearchParams().get("code") || "NoCode";
+  const code = useSearchParams().get("token") || "NoCode";
   const router = useRouter();
-  const { tenant, lang } = useParams<{ tenant: string; lang: string }>();
+  const applySession = useApplySession();
 
   return (
     <AuthFlow
       code={code}
-      onSignInSuccess={() => router.push(`/${tenant}/${lang}/home`)}
-      onSignInError={() => router.push(`/${tenant}/${lang}/admin/auth`)}
+      tenantCode="urup"
+      lang="en"
+      onSignInSuccess={(data) => {
+        applySession(data);
+        router.push("/admin/home");
+      }}
+      onSignInError={() => router.push("/")}
     />
   );
 }
@@ -201,7 +206,7 @@ export default function SignInPage() {
 }
 ```
 
-On success the user lands on `(authenticated)/home` (route groups don't appear in the URL, so this resolves to `/${tenant}/${lang}/home`). On error they're bounced back to the login form at `/${tenant}/${lang}/admin/auth`.
+`tenantCode`/`lang` are fixed literals here, not read from the URL — the actual signed-in tenant comes back from the API response (`data.tenant_code`) and is applied via `useApplySession`, independent of whatever was sent in the request. On success the user lands on `/admin/home` (the tenant picker). On error they're bounced back to the login form at `/`.
 
 ---
 
@@ -209,15 +214,14 @@ On success the user lands on `(authenticated)/home` (route groups don't appear i
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Email entry (root) — renders `AuthFlow` (no code) inside a `GlassPanel` nav button, same pattern as `/auth` below; implemented at `src/app/page.tsx` |
-| `/auth` | Email entry — renders `AuthFlow` (no code); implemented at `src/app/[tenant]/[lang]/(anonymous)/admin/auth/page.tsx` |
-| `/auth/signIn?code=xxx` | Magic-link callback — renders `AuthFlow` with code; implemented at `src/app/[tenant]/[lang]/(anonymous)/admin/auth/signIn/page.tsx` |
+| `/` | Login form (root, universal) — renders `AuthFlow` (no code) inside a `GlassPanel` nav button; implemented at `src/app/page.tsx` |
+| `/signIn?token=xxx` | Magic-link callback — renders `AuthFlow` with code; implemented at `src/app/signIn/page.tsx` |
 
-Both `/` and `/auth` follow the same "nav button lives outside `AuthFlow`'s `<form>`" pattern (see [Login button in GlassPanel navigation pane](#login-button-in-glasspanel-navigation-pane) above) — each must independently track `step` via `onStepChange` and pass `show: step !== "sent"` to the button config, or the button will stay visible after the email is sent. `src/app/page.tsx` was missing this wiring until it was added to match `admin/auth/page.tsx`.
+There is only ever one login form now — `/` — per `design/admin-routing-restructure.md`; there is no per-tenant `/auth` variant. It follows the "nav button lives outside `AuthFlow`'s `<form>`" pattern (see [Login button in GlassPanel navigation pane](#login-button-in-glasspanel-navigation-pane) above): it tracks `step` via `onStepChange` and passes `show: step !== "sent"` to the button config, or the button would stay visible after the email is sent.
 
-The `loginSent` route has been removed; the sent state is managed internally by `AuthFlow`.
+The `loginSent` route does not exist; the sent state is managed internally by `AuthFlow` (an orphaned `loginSent` page briefly reappeared during the routing restructure and was removed again to stay consistent with this decision).
 
-`redirectUrl` sent from the login form is derived from the login page's own path with `/signIn` appended, so it always resolves to the sibling `signIn` route above.
+`redirectUrl` sent from the login form is derived from the login page's own path (`/`) with `/signIn` appended, so it always resolves to the `signIn` route above.
 
 ---
 
@@ -228,15 +232,13 @@ The JWT itself is never touched by client-side JS — it's set as an `HttpOnly` 
 - `src/features/auth/persistSessionToStorage` — pure function, writes `AuthSessionData` to the existing localStorage keys that `GlobalStateContext`, `TenantContext`, `Header`, `Footer`, and `ProfileEntry` already read: `user`, `f`, `l`, `fn`, `k`, `tagLine`, `tag`, `footer`, `menu`, `personName`, `title`.
 - `src/features/auth/useApplySession` — hook that calls `persistSessionToStorage` and also drives the corresponding `useGlobalState`/`useTenant` setters (`setUser`, `setTenant`, `setShowTag`, `setShowFooter`, `setShowMenu`, `setShowPersonName`) so the UI updates immediately without waiting for a reload.
 
-`signIn/page.tsx` calls `applySession(data)` before redirecting to `/${tenant}/${lang}/home` on success. On error it redirects to `/${tenant}/${lang}/admin/auth` without touching session state.
+`signIn/page.tsx` calls `applySession(data)` before redirecting to `/admin/home` on success. On error it redirects to `/` without touching session state.
 
 Rehydration on a fresh page load / new tab relies solely on the existing localStorage read in `GlobalStateContext`'s mount effect — there is no server-side session check (e.g. an `/api/auth/me` verifying the `auth_token` cookie). A stale or cleared localStorage will look logged-out even if the cookie is still valid; this was an accepted trade-off, not an oversight.
 
-### Known issue: `lang` and `LangGuard`
+### `lang` and `LangGuard` — moot for the admin flow post-restructure
 
-`LangGuard` (`src/app/[tenant]/[lang]/LangGuard.tsx`) reads `localStorage["lang"]` on every route render under `[tenant]/[lang]`, and if it's set but invalid for the current tenant (`isValidLocaleForTenant`), it clears it and `router.replace(`/${tenant}`)` — the language-selection page — discarding whatever path the user was headed to. Because nothing in the login flow wrote a `lang` value, a stale one left over from a different tenant/session could win this check and strand a freshly-authenticated user on language selection instead of `/home`.
-
-**Interim fix:** `persistSessionToStorage` now force-writes `localStorage["lang"] = "en"` on every successful sign-in, since `AuthSessionData`/`AuthAppSettings` carries no language field to derive a real preference from. This is acknowledged as temporary — a proper fix would either add a language field to the tracking API's session response, or have `LangGuard` fall back to the URL's `lang` segment (already known-valid, since it's the tenant/lang route being rendered) instead of forcibly redirecting away when the stored value is stale.
+`LangGuard` (`src/app/[tenant]/[lang]/LangGuard.tsx`) only runs under the `[tenant]/[lang]` route segment, which the login/admin flow no longer touches at all (`/`, `/signIn`, `/admin/*` are all outside that segment — see `design/admin-routing-restructure.md`). The stale-`lang`-strands-you-on-language-selection issue this section used to describe can no longer happen to a signed-in admin. `LangGuard` is still live for the untouched anonymous survey-taking flow under `[tenant]/[lang]/(anonymous)`, where `persistSessionToStorage` force-writing `localStorage["lang"] = "en"` on sign-in remains relevant only insofar as it could affect that separate flow if the same browser later visits it.
 
 ---
 

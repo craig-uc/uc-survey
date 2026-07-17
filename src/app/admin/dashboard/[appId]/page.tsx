@@ -1,20 +1,32 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BreadcrumbBar } from "@/components/layout/BreadcrumbBar";
 import { useTenant } from "@/features/tenant";
 
-export default function DashboardPage({ params }: { params: { appId: string } }) {
+export default function DashboardPage({ params }: { params: Promise<{ appId: string }> }) {
   const searchParams = useSearchParams();
   const name = searchParams.get("name") || "Application";
-  const appId = params.appId;
+  const [appId, setAppId] = useState<string | null>(null);
   const application_id = searchParams.get("application_id");
   const { tenantCode } = useTenant();
 
+  useEffect(() => {
+    let cancelled = false;
+
+    params.then((resolved) => {
+      if (!cancelled) setAppId(resolved.appId);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params]);
+
   const breadcrumbs = [
-    { label: "Home", href: "/home" },
-    { label: name, href: `/dashboard/${appId}`, active: true },
+    { label: "Home", href: "/admin/home" },
+    { label: name, href: `/admin/dashboard/${appId}`, active: true },
   ];
 
   return (

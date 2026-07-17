@@ -1,22 +1,14 @@
 "use client";
 
-import { useRef, useState, Suspense, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState, Suspense } from "react";
 import { IdentityInitializer } from "@/features/identity";
 import GlassPanel from "@/components/GlassPanel";
 import { AuthFlow, AuthFlowHandle, AuthStep } from "@/features/auth";
 
-const page = "indexAuth";
-const version = "1";
-
 export default function RootPage() {
-  const router = useRouter();
   const authRef = useRef<AuthFlowHandle>(null);
   const [step, setStep] = useState<AuthStep>("login");
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-  }, [router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -44,12 +36,6 @@ export default function RootPage() {
             hideLoginButton
             onStepChange={setStep}
             onSubmittingChange={setSubmitting}
-            onSignInSuccess={(data) => {
-              // store session, redirect
-            }}
-            onSignInError={() => {
-              // clear session, redirect
-            }}
           />
         </div>
       </GlassPanel>

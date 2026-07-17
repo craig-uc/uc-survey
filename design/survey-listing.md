@@ -1,7 +1,7 @@
 # Survey Listing (per-tenant home page)
 
 ## Status
-Accepted
+Accepted — the mock data source (`listSurveysByTenant`) described below has since been superseded by `design/survey-listing-live-api.md`; the routes below have since moved per `design/admin-routing-restructure.md` (`/{tenant}/{lang}/surveys/{id}` → `/admin/surveys/{id}`, and the home-page branching described below no longer exists — the survey list is now its own tenant-agnostic page, `/admin/surveys`, reading the active tenant from `TenantContext`). The rest of this doc (data model, versioning, permissions, UI structure) still applies as-is.
 
 ## Context
 Every non-`urup` tenant needs a home page listing their surveys grouped by lifecycle state, with an "add new survey" action, and edit/delete actions gated by state. The existing `Survey` model (`src/features/survey/types.ts`) only has `status: "draft" | "published" | "closed"` with no versioning and no concept of an approval workflow — it was built purely to drive the anonymous respondent-facing flow (`(anonymous)/[survey]/page.tsx` → `getSurveyPhase`). This feature requires extending that model without breaking the respondent flow.
@@ -64,14 +64,14 @@ Rationale: deleted is always excluded (not-found). If a live (active/closed) ver
 - `permissions.ts` — `canEdit`, `canDelete` as above.
 - `createNewVersion(survey): Survey` — the version-bump helper described above, used by the edit action on an `active` survey.
 - `SurveyListing.tsx` — renders four sections/tabs (Active, Pending, Closed, Deleted) via `GlassPanel`, each survey row showing name, version, and (for Pending) its sub-state badge. Edit button visible iff `canEdit`; Delete button visible iff `canDelete`. An "Add new survey" button always visible.
-- `NewSurveyButton.tsx` — on click, creates a new `Survey` (`status: "pending"`, `pendingSubState: "design"`, `version: 1`) and navigates to `/{tenant}/{lang}/surveys/{id}`.
+- `NewSurveyButton.tsx` — on click, creates a new `Survey` (`status: "pending"`, `pendingSubState: "design"`, `version: 1`) and navigates to `/admin/surveys/{id}`.
 - `EditSurveyButton.tsx` — on click: if `status === "active"`, calls `createNewVersion` first and navigates to the new record's edit URL; if `status === "pending"`, navigates straight to its edit URL.
 
 ### New route (placeholder editor)
-`src/app/[tenant]/[lang]/(authenticated)/surveys/[surveyId]/page.tsx` — a stub `GlassPanel` page ("Survey editor coming soon", shows the survey id/name/version). The actual editor UI is out of scope for this feature per the confirmed scope decision — a separate design doc covers it when built.
+`src/app/admin/surveys/[surveyId]/page.tsx` — a stub `GlassPanel` page ("Survey editor coming soon", shows the survey id/name/version). The actual editor UI is out of scope for this feature per the confirmed scope decision — a separate design doc covers it when built.
 
-### home/page.tsx integration
-For any `tenantCode !== "urup"`, `home/page.tsx` renders `<SurveyListing tenantCode={tenantCode} />` (see `design/features/tenant-listing.md` for the branching logic).
+### Survey list page
+Per `design/admin-routing-restructure.md`, the old `tenantCode === "urup"` branch on the authenticated home page is gone. The survey list now lives on its own tenant-agnostic page, `src/app/admin/surveys/page.tsx`, rendering `<SurveyListing tenantCode={tenantCode} />` where `tenantCode` comes from `useTenant()` — set by `TenantEntry`'s click handler when a tenant is picked from `/admin/home`.
 
 ### Tests
 - `mockSurveys.test.ts` / `getSurveyPhase.test.ts`: update fixtures for the renamed statuses (`pending`/`active`) and extend with version/deleted/pending-published cases — including a same-slug two-version scenario (old `active` v1 + new `pending` v2) proving `findSurvey` still resolves to v1.

@@ -250,22 +250,13 @@ describe("LogoutButton", () => {
   });
 
   describe("redirect after logout", () => {
-    it("redirects to /{tenant}/{lang} when both are set", async () => {
+    it("always redirects to the root login page, regardless of tenant/lang", async () => {
       vi.mocked(useGlobalState).mockReturnValue({ ...defaultState, lang: "af" });
       vi.mocked(useTenant).mockReturnValue({ ...defaultTenant, tenant: "acme" });
       render(<LogoutButton />);
       await act(async () => {});
       await act(async () => { fireEvent.click(screen.getByRole("button")); });
-      expect(mockPush).toHaveBeenCalledWith("/acme/af");
-    });
-
-    it("redirects to /{tenant} when lang is null", async () => {
-      vi.mocked(useGlobalState).mockReturnValue({ ...defaultState, lang: null });
-      vi.mocked(useTenant).mockReturnValue({ ...defaultTenant, tenant: "acme" });
-      render(<LogoutButton />);
-      await act(async () => {});
-      await act(async () => { fireEvent.click(screen.getByRole("button")); });
-      expect(mockPush).toHaveBeenCalledWith("/acme");
+      expect(mockPush).toHaveBeenCalledWith("/");
     });
 
     it("redirects to / when tenant is null", async () => {
