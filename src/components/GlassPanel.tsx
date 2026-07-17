@@ -41,6 +41,7 @@ interface GlassPanelProps {
   children?: ReactNode;
   showTitle?: boolean;
   navigation?: NavigationConfig;
+  layout?: "floating" | "admin";
 }
 
 function effectivePosition(btn: ButtonConfig): "left" | "center" | "right" {
@@ -115,12 +116,25 @@ function Navigation({ buttons }: NavigationConfig) {
   );
 }
 
-export default function GlassPanel({ children, showTitle = false, navigation }: GlassPanelProps) {
+export default function GlassPanel({
+  children,
+  showTitle = false,
+  navigation,
+  layout = "floating",
+}: GlassPanelProps) {
+  const isAdmin = layout === "admin";
+
   return (
-    <div className="rounded-2xl bg-white/20 backdrop-blur-sm w-[95vw] h-[95vh] md:w-[75%] md:h-[90vh] flex flex-col overflow-hidden">
+    <div
+      className={
+        isAdmin
+          ? "bg-white/20 backdrop-blur-sm w-full flex-1 min-h-0 flex flex-col overflow-hidden"
+          : "rounded-2xl bg-white/20 backdrop-blur-sm w-[95vw] h-[95vh] md:w-[75%] md:h-[90vh] flex flex-col overflow-hidden"
+      }
+    >
       {showTitle && <Title />}
       <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4">
-        {children}
+        {isAdmin ? <div className="max-w-[80%] mx-auto w-full">{children}</div> : children}
       </div>
       {navigation && <Navigation {...navigation} />}
     </div>

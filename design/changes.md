@@ -4,6 +4,9 @@
 ***
 
 ## 0.0.0
+### 0.0.8
+#### 2026-07-17
++ Change glasspanel in admin to full screen
 ### 0.0.7
 #### 2026-07-17
 + Every page under `/admin/*` now shows the breadcrumb bar — previously only the dashboard page had one. `/admin/home` shows a single active "Home" crumb, `/admin/surveys` shows Home / Surveys, and `/admin/surveys/[surveyId]` shows Home / Surveys / the survey id

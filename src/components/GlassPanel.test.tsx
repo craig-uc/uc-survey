@@ -90,4 +90,37 @@ describe("GlassPanel", () => {
     );
     expect(screen.getByRole("button", { name: "Login" }).dataset.loading).toBe("true");
   });
+
+  it("defaults to the floating layout's sizing classes when layout is omitted", () => {
+    const { container } = render(
+      <GlassPanel>
+        <p>Hello</p>
+      </GlassPanel>
+    );
+    const shell = container.firstElementChild as HTMLElement;
+    expect(shell.className).toContain("w-[95vw]");
+    expect(shell.className).toContain("rounded-2xl");
+  });
+
+  it("fills the page and caps content at 80% width when layout is admin", () => {
+    const { container } = render(
+      <GlassPanel layout="admin">
+        <p>Hello</p>
+      </GlassPanel>
+    );
+    const shell = container.firstElementChild as HTMLElement;
+    expect(shell.className).toContain("w-full");
+    expect(shell.className).toContain("flex-1");
+    expect(shell.className).not.toContain("w-[95vw]");
+
+    const contentWrapper = screen.getByText("Hello").parentElement as HTMLElement;
+    expect(contentWrapper.className).toContain("max-w-[80%]");
+    expect(contentWrapper.className).toContain("mx-auto");
+  });
+
+  it("renders the admin layout without crashing when children is omitted", () => {
+    const { container } = render(<GlassPanel layout="admin" />);
+    const shell = container.firstElementChild as HTMLElement;
+    expect(shell.className).toContain("w-full");
+  });
 });

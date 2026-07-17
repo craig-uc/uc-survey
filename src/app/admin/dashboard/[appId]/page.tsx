@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BreadcrumbBar } from "@/components/layout/BreadcrumbBar";
 import { useTenant } from "@/features/tenant";
+import GlassPanel from "@/components/GlassPanel";
 
 export default function DashboardPage({ params }: { params: Promise<{ appId: string }> }) {
   const searchParams = useSearchParams();
@@ -32,7 +33,7 @@ export default function DashboardPage({ params }: { params: Promise<{ appId: str
   return (
     <div className="flex flex-col min-h-full">
       <BreadcrumbBar items={breadcrumbs} />
-      <div className="container mx-auto px-6 py-12 grow">
+      <GlassPanel layout="admin">
         <h1 className="text-4xl font-bold text-light mb-6 font-custom tracking-tight text-center">
           {name}
         </h1>
@@ -50,7 +51,7 @@ export default function DashboardPage({ params }: { params: Promise<{ appId: str
           <div className="mt-8">
           </div>
         )}
-      </div>
+      </GlassPanel>
     </div>
   );
 }

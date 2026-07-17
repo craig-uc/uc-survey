@@ -36,7 +36,7 @@ export default function SurveyEditorPage({ params }: SurveyEditorPageProps) {
   return (
     <div className="flex flex-col min-h-full">
       <BreadcrumbBar items={breadcrumbs} />
-      <GlassPanel>
+      <GlassPanel layout="admin">
         <div className="flex flex-col items-center justify-center min-h-full gap-4 text-center">
           <h1 className="text-3xl font-bold">Survey editor coming soon</h1>
           <p>Editing survey {surveyId}.</p>

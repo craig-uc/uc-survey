@@ -3,6 +3,7 @@
 import { useTenant } from "@/features/tenant";
 import { SurveyListing } from "@/features/survey-management";
 import { BreadcrumbBar } from "@/components/layout/BreadcrumbBar";
+import GlassPanel from "@/components/GlassPanel";
 
 export default function SurveysPage() {
   const { tenantCode } = useTenant();
@@ -15,7 +16,9 @@ export default function SurveysPage() {
   return (
     <div className="flex flex-col min-h-full">
       <BreadcrumbBar items={breadcrumbs} />
-      <SurveyListing tenantCode={tenantCode} />
+      <GlassPanel layout="admin">
+        <SurveyListing tenantCode={tenantCode} />
+      </GlassPanel>
     </div>
   );
 }

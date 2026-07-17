@@ -18,6 +18,7 @@ Location: `src/components/GlassPanel.tsx`
 | `children` | `ReactNode` | — | Content rendered inside the scrollable area |
 | `showTitle` | `boolean` | `false` | Renders the tenant title header when `true` |
 | `navigation` | `NavigationConfig` | — | Renders the navigation footer when provided; omit to hide it entirely |
+| `layout` | `"floating" \| "admin"` | `"floating"` | `"floating"` renders the centred card described below; `"admin"` stretches the panel to fill its container instead, capping `children` at `max-w-[80%]` and centering them — used across `/admin/*` |
 
 ### NavigationConfig
 
@@ -74,6 +75,31 @@ Location: `src/components/GlassPanel.tsx`
 ```
 
 The outer card is `w-[95vw] h-[95vh]` on mobile and `md:w-[70%] md:h-[90vh]` on larger viewports.
+
+---
+
+## Layout Variants
+
+### `layout="floating"` (default)
+
+The behaviour described above and used by the anonymous survey-taking flow: a centred glass card sized relative to the viewport (`w-[95vw] h-[95vh] md:w-[75%] md:h-[90vh]`), with rounded corners.
+
+### `layout="admin"`
+
+Used across `/admin/*` pages (home, surveys list, survey editor, dashboard), typically rendered below a `BreadcrumbBar` inside a `flex flex-col` page wrapper. Differences from `floating`:
+
+- No fixed viewport-relative sizing or rounded corners — the outer shell is `w-full flex-1 min-h-0`, so it stretches to fill whatever space its flex-column parent gives it (e.g. the page area beneath the breadcrumb bar) rather than floating as a card.
+- `children` are wrapped in an inner `max-w-[80%] mx-auto w-full` container within the scrollable content area, so admin content is centred and capped at 80% width instead of running edge-to-edge.
+- `showTitle` and `navigation` still work identically to the floating variant if supplied, though admin pages generally omit both — `BreadcrumbBar` already covers in-app navigation/identity for `/admin/*`.
+
+```tsx
+<div className="flex flex-col min-h-full">
+  <BreadcrumbBar items={breadcrumbs} />
+  <GlassPanel layout="admin">
+    <SurveyListing tenantCode={tenantCode} />
+  </GlassPanel>
+</div>
+```
 
 ---
 
